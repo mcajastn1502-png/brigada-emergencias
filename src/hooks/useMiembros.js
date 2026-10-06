@@ -45,12 +45,29 @@ export function useMiembros() {
   }, [cargar]);
 
   /** @param {number} id */
-  const toggleEstado = useCallback(async (id) => {
-    const m = miembros.find((x) => x.id === id);
-    if (!m) return;
-    const nuevo = m.estado === 'dentro' ? 'alrededores' : 'dentro';
-    await supabase.from('miembros').update({ estado: nuevo }).eq('id', id);
-  }, [miembros]);
+  const toggleEstado = useCallback(
+    async (id) => {
+      const m = miembros.find((x) => x.id === id);
+      if (!m) return;
+
+      const nuevo = m.estado === 'dentro' ? 'alrededores' : 'dentro';
+
+      // ⭐ 1. Actualización optimista — cambia el estado local INMEDIATAMENTE
+      setMiembros((prev) => prev.map((x) => (x.id === id ? { ...x, estado: nuevo } : x)));
+
+      // 2. Enviar el cambio a Supabase
+      const { error } = await supabase.from('miembros').update({ estado: nuevo }).eq('id', id);
+
+      // 3. Si algo falla, revertir el cambio local
+      if (error) {
+        console.error('❌ Error al actualizar miembro:', error);
+        setMiembros((prev) => prev.map((x) => (x.id === id ? { ...x, estado: m.estado } : x)));
+      } else {
+        console.log(`✅ Miembro ${id} actualizado a: ${nuevo}`);
+      }
+    },
+    [miembros]
+  );
 
   return { miembros, loading, toggleEstado, recargar: cargar };
 }

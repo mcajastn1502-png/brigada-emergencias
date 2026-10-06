@@ -144,3 +144,8 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# VS Code - excluir configs personales, mantener .vscode/extensions.json y .vscode/settings.json
+.vscode/*.local
+.vscode/launch.json
+.vscode/tasks.json

@@ -1,0 +1,2147 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🚨 Brigada de Emergencias - Bodega</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --emergencia: #e63946;
+    --rescatista: #2a9d8f;
+    --incendios: #e76f51;
+    --bg: #0f1419;
+    --panel: #1a2027;
+    --border: #2d3748;
+    --text: #e2e8f0;
+    --text-dim: #94a3b8;
+    --accent: #4299e1;
+    --success: #38a169;
+    --warning: #d69e2e;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    z-index: 100;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.1em; }
+  .logo-icon {
+    width: 34px; height: 34px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--emergencia), var(--incendios));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2em;
+  }
+  .status-pill {
+    padding: 5px 12px; border-radius: 20px; font-size: 0.78em; font-weight: 600;
+    background: var(--success); color: white;
+  }
+  .status-pill.alert { background: var(--emergencia); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+  .session-select {
+    background: var(--bg); color: var(--text); border: 1px solid var(--border);
+    padding: 7px 12px; border-radius: 6px; font-size: 0.85em; cursor: pointer;
+  }
+
+  nav.tabs {
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    display: flex; overflow-x: auto; padding: 0 10px; gap: 4px;
+  }
+  nav.tabs button {
+    background: transparent; border: none; color: var(--text-dim);
+    padding: 12px 18px; cursor: pointer; font-size: 0.9em; font-weight: 500;
+    border-bottom: 3px solid transparent; white-space: nowrap; transition: 0.2s;
+  }
+  nav.tabs button:hover { color: var(--text); }
+  nav.tabs button.active { color: var(--text); border-bottom-color: var(--emergencia); }
+  nav.tabs button.locked { opacity: 0.4; cursor: not-allowed; }
+  nav.tabs button.ayuda-btn { color: var(--accent); }
+
+  main { flex: 1; overflow: hidden; position: relative; }
+  .tab-content { display: none; height: 100%; overflow-y: auto; padding: 16px; }
+  .tab-content.active { display: block; }
+
+  #mapTab { padding: 0; }
+  #mapa-container { width: 100%; height: 100%; position: relative; background: #1e2530; overflow: auto; }
+  #mapa { position: relative; width: 100%; height: 100%; min-width: 900px; min-height: 700px; }
+  svg.mapa-bg { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+  .marker {
+    position: absolute; transform: translate(-50%, -50%);
+    cursor: pointer; transition: 0.4s ease; z-index: 10;
+  }
+  .marker .dot {
+    width: 26px; height: 26px; border-radius: 50%;
+    border: 3px solid white; box-shadow: 0 0 12px rgba(0,0,0,0.6);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7em; font-weight: 700; color: white;
+  }
+  .marker .label {
+    position: absolute; top: 30px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.85); color: white; padding: 3px 8px;
+    border-radius: 4px; font-size: 0.7em; white-space: nowrap;
+    pointer-events: none; border: 1px solid var(--border);
+  }
+  .marker.emergencia .dot { background: var(--emergencia); }
+  .marker.rescatista .dot { background: var(--rescatista); }
+  .marker.incendios .dot { background: var(--incendios); }
+
+  .marker.salida { animation: blink 1.5s infinite; }
+  .marker.salida .dot { background: #22c55e; width: 30px; height: 30px; border-color: white; border-radius: 6px; }
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+  .marker.punto-encuentro .dot { background: #f59e0b; width: 32px; height: 32px; border-radius: 50%; font-size: 0.9em; }
+  .marker.incidente .dot { background: var(--emergencia); width: 40px; height: 40px; font-size: 1.2em; animation: pulse 0.8s infinite; }
+
+  .leyenda {
+    position: absolute; bottom: 15px; left: 15px; z-index: 50;
+    background: rgba(15,20,25,0.95); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px; font-size: 0.75em;
+  }
+  .leyenda-item { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+  .leyenda-color { width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; }
+
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 14px; }
+  .card h3 { margin-bottom: 10px; font-size: 1em; color: var(--accent); }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  @media (max-width: 768px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+  .stat { text-align: center; padding: 16px; }
+  .stat .num { font-size: 2.2em; font-weight: 700; }
+  .stat .lbl { font-size: 0.8em; color: var(--text-dim); margin-top: 4px; }
+  .stat.emergencia .num { color: var(--emergencia); }
+  .stat.rescatista .num { color: var(--rescatista); }
+  .stat.incendios .num { color: var(--incendios); }
+
+  .persona-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 0.88em;
+  }
+  .persona-item:last-child { border-bottom: none; }
+  .persona-info { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .badge-rol { padding: 2px 8px; border-radius: 4px; font-size: 0.72em; font-weight: 600; color: white; }
+  .badge-rol.emergencia { background: var(--emergencia); }
+  .badge-rol.rescatista { background: var(--rescatista); }
+  .badge-rol.incendios { background: var(--incendios); }
+
+  .btn {
+    padding: 8px 14px; border-radius: 6px; border: none; cursor: pointer;
+    font-size: 0.82em; font-weight: 600; transition: 0.2s;
+  }
+  .btn:hover { transform: translateY(-1px); opacity: 0.9; }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-danger { background: var(--emergencia); color: white; }
+  .btn-success { background: var(--success); color: white; }
+  .btn-warning { background: var(--warning); color: white; }
+  .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  .btn-sm { padding: 5px 10px; font-size: 0.75em; }
+
+  .cronometro {
+    font-family: 'Courier New', monospace; font-size: 3.2em; font-weight: 700;
+    text-align: center; padding: 20px; color: var(--emergencia);
+    text-shadow: 0 0 20px rgba(230,57,70,0.5);
+  }
+  .cronometro.inactivo { color: var(--text-dim); text-shadow: none; }
+  .cronometro-lbl { text-align: center; color: var(--text-dim); font-size: 0.8em; margin-bottom: 10px; }
+
+  .sos-btn {
+    position: fixed; bottom: 25px; right: 25px; z-index: 999;
+    width: 80px; height: 80px; border-radius: 50%;
+    background: var(--emergencia); color: white; border: 4px solid white;
+    font-size: 0.9em; font-weight: 700; cursor: pointer;
+    box-shadow: 0 0 30px rgba(230,57,70,0.7);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    transition: 0.2s; user-select: none;
+  }
+  .sos-btn:active { transform: scale(0.95); }
+  .sos-btn .sos-icon { font-size: 1.4em; }
+  .sos-menu {
+    position: fixed; bottom: 115px; right: 25px; z-index: 999;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 8px; display: none;
+    min-width: 220px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  }
+  .sos-menu.show { display: block; }
+  .sos-menu button {
+    display: block; width: 100%; text-align: left;
+    padding: 12px; margin: 4px 0; border-radius: 6px;
+    background: transparent; border: none; color: var(--text);
+    cursor: pointer; font-size: 0.85em;
+  }
+  .sos-menu button:hover { background: var(--bg); }
+  .sos-menu button.danger { color: var(--emergencia); font-weight: 600; }
+
+  .protocolo { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 12px; overflow: hidden; }
+  .protocolo-header {
+    padding: 14px 16px; cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center; font-weight: 600;
+  }
+  .protocolo-header:hover { background: rgba(66,153,225,0.1); }
+  .protocolo-body { max-height: 0; overflow: hidden; transition: max-height 0.3s; padding: 0 16px; }
+  .protocolo.open .protocolo-body { max-height: 3000px; padding: 0 16px 16px; }
+  .paso { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 0.87em; }
+  .paso:last-child { border-bottom: none; }
+  .paso-num {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--accent); color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75em; font-weight: 700; flex-shrink: 0;
+  }
+  .paso.urgente .paso-num { background: var(--emergencia); }
+
+  .video-card {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+    margin: 12px 0; overflow: hidden; transition: 0.2s; cursor: pointer;
+  }
+  .video-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .video-thumb { position: relative; width: 100%; padding-bottom: 56.25%; background: #000; overflow: hidden; }
+  .video-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .video-thumb .play-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.8));
+    display: flex; align-items: center; justify-content: center; transition: 0.2s;
+  }
+  .video-card:hover .play-overlay { background: linear-gradient(180deg, rgba(66,153,225,0.2) 40%, rgba(0,0,0,0.9)); }
+  .video-thumb .play-btn {
+    width: 60px; height: 60px; border-radius: 50%;
+    background: rgba(230,57,70,0.9); color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5em; padding-left: 4px;
+    box-shadow: 0 0 30px rgba(230,57,70,0.6);
+  }
+  .video-info { padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .video-info .titulo { font-size: 0.85em; font-weight: 600; }
+  .video-info .duracion { font-size: 0.72em; color: var(--text-dim); background: var(--panel); padding: 3px 8px; border-radius: 4px; white-space: nowrap; }
+  .video-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 8px; border-radius: 4px;
+    background: rgba(230,57,70,0.2); color: var(--emergencia);
+    font-size: 0.7em; font-weight: 600;
+  }
+  .voice-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 8px; border-radius: 4px;
+    background: rgba(56,161,105,0.2); color: var(--success);
+    font-size: 0.7em; font-weight: 600;
+  }
+
+  .video-modal {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.92);
+    display: none; align-items: center; justify-content: center;
+    z-index: 5000; padding: 20px;
+  }
+  .video-modal.show { display: flex; }
+  .video-modal-content {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; max-width: 1000px; width: 100%;
+    max-height: 90vh; overflow-y: auto;
+  }
+  .video-modal-header { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .video-modal-header h3 { font-size: 1em; }
+  .video-modal-body { padding: 0; background: #000; }
+  .video-modal-body iframe { width: 100%; aspect-ratio: 16/9; border: none; display: block; }
+  .video-modal-footer { padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .video-modal-footer .nota { font-size: 0.78em; color: var(--text-dim); flex: 1; min-width: 200px; }
+  .close-video { background: transparent; border: none; color: var(--text); font-size: 1.4em; cursor: pointer; padding: 4px 10px; border-radius: 6px; }
+  .close-video:hover { background: var(--bg); color: var(--emergencia); }
+
+  input, select, textarea {
+    background: var(--bg); color: var(--text); border: 1px solid var(--border);
+    padding: 9px 12px; border-radius: 6px; font-size: 0.85em; width: 100%; font-family: inherit;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
+  label { font-size: 0.8em; color: var(--text-dim); display: block; margin-bottom: 4px; }
+  .form-row { margin-bottom: 12px; }
+
+  .hist-item {
+    background: var(--bg); border-left: 4px solid var(--emergencia);
+    padding: 12px 14px; border-radius: 6px; margin-bottom: 10px; font-size: 0.85em;
+  }
+  .hist-item .fecha { color: var(--text-dim); font-size: 0.8em; }
+
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    display: none; align-items: center; justify-content: center;
+    z-index: 2000; padding: 20px;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 24px; max-width: 500px; width: 100%; max-height: 85vh; overflow-y: auto; }
+  .modal h2 { margin-bottom: 16px; font-size: 1.2em; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+
+  .alert-banner {
+    background: var(--emergencia); color: white; padding: 10px 16px;
+    border-radius: 8px; margin-bottom: 12px; font-size: 0.85em;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+
+  .toast {
+    position: fixed; top: 80px; right: 20px; z-index: 3000;
+    background: var(--panel); border: 1px solid var(--accent);
+    padding: 12px 18px; border-radius: 8px; font-size: 0.85em;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+    transform: translateX(400px); transition: 0.3s;
+  }
+  .toast.show { transform: translateX(0); }
+  .toast.error { border-color: var(--emergencia); }
+  .toast.success { border-color: var(--success); }
+
+  .empty { text-align: center; color: var(--text-dim); padding: 30px; font-size: 0.9em; }
+  .section-title { font-size: 1.1em; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .flex-between { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .mt-10 { margin-top: 10px; }
+  .mb-10 { margin-bottom: 10px; }
+
+  .ayuda-hero {
+    background: linear-gradient(135deg, rgba(230,57,70,0.15), rgba(66,153,225,0.15));
+    border: 1px solid var(--border); border-radius: 12px;
+    padding: 24px; margin-bottom: 20px; text-align: center;
+  }
+  .ayuda-hero h1 { font-size: 1.6em; margin-bottom: 8px; }
+  .ayuda-hero p { color: var(--text-dim); font-size: 0.9em; max-width: 700px; margin: 0 auto; }
+
+  .paso-demo {
+    display: flex; gap: 16px; align-items: flex-start;
+    background: var(--panel); border: 1px solid var(--border);
+    border-left: 4px solid var(--accent); border-radius: 10px;
+    padding: 16px; margin-bottom: 12px; transition: 0.2s; position: relative;
+  }
+  .paso-demo:hover { border-left-color: var(--emergencia); transform: translateX(4px); }
+  .paso-demo.completado { opacity: 0.55; border-left-color: var(--success); }
+  .paso-demo.completado .paso-demo-num::after {
+    content: '✓'; position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--success); color: white; border-radius: 50%;
+    font-size: 0.9em; font-weight: 700;
+  }
+  .paso-demo-num {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: var(--accent); color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1em; font-weight: 700; flex-shrink: 0;
+    position: relative; overflow: hidden;
+  }
+  .paso-demo-content { flex: 1; }
+  .paso-demo-content h4 { font-size: 1em; margin-bottom: 4px; }
+  .paso-demo-content p { font-size: 0.85em; color: var(--text-dim); line-height: 1.5; }
+  .paso-demo-content .accion-btn { margin-top: 10px; display: inline-flex; align-items: center; gap: 6px; }
+
+  .check-progress { display: flex; align-items: center; gap: 12px; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; margin-bottom: 20px; }
+  .progress-bar { flex: 1; height: 10px; background: var(--bg); border-radius: 5px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--success)); width: 0%; transition: width 0.4s; }
+  .progress-label { font-size: 0.85em; font-weight: 600; white-space: nowrap; }
+
+  .rol-tabla { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+  .rol-tabla th, .rol-tabla td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+  .rol-tabla th { background: var(--bg); color: var(--accent); font-weight: 700; font-size: 0.85em; }
+  .rol-tabla tr:hover { background: rgba(66,153,225,0.05); }
+
+  .atajo-kbd {
+    display: inline-block; padding: 2px 8px; background: var(--bg);
+    border: 1px solid var(--border); border-radius: 4px;
+    font-family: monospace; font-size: 0.85em;
+    box-shadow: 0 2px 0 var(--border);
+  }
+
+  .faq-item { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px; overflow: hidden; }
+  .faq-pregunta { padding: 14px 16px; cursor: pointer; font-weight: 600; font-size: 0.9em; display: flex; justify-content: space-between; align-items: center; }
+  .faq-pregunta:hover { background: rgba(66,153,225,0.08); }
+  .faq-respuesta { max-height: 0; overflow: hidden; transition: max-height 0.3s; padding: 0 16px; font-size: 0.85em; color: var(--text-dim); line-height: 1.6; }
+  .faq-item.open .faq-respuesta { max-height: 400px; padding: 0 16px 16px; }
+
+  .badge-tip { display: inline-block; padding: 3px 10px; background: rgba(66,153,225,0.2); color: var(--accent); border-radius: 20px; font-size: 0.72em; font-weight: 600; margin-left: 6px; }
+  .badge-tip.success { background: rgba(56,161,105,0.2); color: var(--success); }
+  .badge-tip.warn { background: rgba(214,158,46,0.2); color: var(--warning); }
+  .badge-tip.danger { background: rgba(230,57,70,0.2); color: var(--emergencia); }
+
+  .btn-flotante-ayuda {
+    position: fixed; bottom: 25px; right: 120px; z-index: 998;
+    width: 56px; height: 56px; border-radius: 50%;
+    background: var(--accent); color: white; border: 3px solid white;
+    font-size: 1.4em; font-weight: 700; cursor: pointer;
+    box-shadow: 0 0 20px rgba(66,153,225,0.6);
+    display: flex; align-items: center; justify-content: center;
+    transition: 0.2s; user-select: none;
+  }
+  .btn-flotante-ayuda:hover { transform: scale(1.08); }
+
+  /* ============================================
+     MODO MANOS LIBRES
+  ============================================ */
+  .btn-voz {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 16px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--success), #2f855a);
+    color: white; border: none; cursor: pointer;
+    font-size: 0.85em; font-weight: 700;
+    box-shadow: 0 4px 12px rgba(56,161,105,0.4);
+    transition: 0.2s; margin-top: 12px;
+  }
+  .btn-voz:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(56,161,105,0.6); }
+  .btn-voz .icon { font-size: 1.2em; }
+
+  .manos-libres-overlay {
+    position: fixed; inset: 0; z-index: 9000;
+    background: #000; color: white;
+    display: none; flex-direction: column;
+    overflow-y: auto;
+  }
+  .manos-libres-overlay.show { display: flex; }
+
+  .ml-header {
+    padding: 16px 24px;
+    background: linear-gradient(180deg, rgba(230,57,70,0.25), transparent);
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 12px;
+  }
+  .ml-header h2 { font-size: 1.4em; display: flex; align-items: center; gap: 12px; }
+  .ml-header .ml-progress {
+    font-size: 0.9em; background: rgba(255,255,255,0.1);
+    padding: 6px 14px; border-radius: 20px; font-weight: 600;
+  }
+  .ml-close {
+    background: rgba(230,57,70,0.9); color: white; border: none;
+    padding: 10px 18px; border-radius: 8px; cursor: pointer;
+    font-size: 0.9em; font-weight: 700;
+  }
+  .ml-close:hover { background: var(--emergencia); }
+
+  .ml-body { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 30px; max-width: 1100px; margin: 0 auto; width: 100%; }
+
+  .ml-paso-actual {
+    background: linear-gradient(135deg, rgba(66,153,225,0.15), rgba(56,161,105,0.15));
+    border: 2px solid var(--accent);
+    border-radius: 20px; padding: 40px;
+    margin-bottom: 24px; text-align: center;
+    animation: fadeIn 0.4s;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  .ml-paso-actual.urgente { border-color: var(--emergencia); background: linear-gradient(135deg, rgba(230,57,70,0.2), rgba(230,57,70,0.1)); }
+
+  .ml-num {
+    display: inline-block; width: 70px; height: 70px;
+    border-radius: 50%; background: var(--accent); color: white;
+    font-size: 2em; font-weight: 700;
+    line-height: 70px; margin-bottom: 20px;
+  }
+  .ml-paso-actual.urgente .ml-num { background: var(--emergencia); }
+
+  .ml-texto {
+    font-size: 2em; line-height: 1.4; font-weight: 600;
+    margin-bottom: 12px;
+  }
+  @media (max-width: 768px) { .ml-texto { font-size: 1.4em; } }
+
+  .ml-hint {
+    font-size: 0.9em; color: rgba(255,255,255,0.6);
+    margin-top: 20px; font-style: italic;
+  }
+
+  .ml-metronomo {
+    background: #111; border: 2px solid var(--emergencia);
+    border-radius: 16px; padding: 24px; text-align: center;
+    margin-bottom: 24px;
+  }
+  .ml-metronomo .bpm-display {
+    font-size: 3em; font-weight: 700; color: var(--emergencia);
+    font-family: 'Courier New', monospace;
+  }
+  .ml-metronomo .bpm-lbl { font-size: 0.85em; color: rgba(255,255,255,0.6); margin-top: 4px; }
+  .ml-pulso {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: var(--emergencia); margin: 20px auto;
+    transition: transform 0.1s;
+  }
+  .ml-pulso.beat { transform: scale(1.4); box-shadow: 0 0 40px var(--emergencia); }
+  .ml-metronomo-btns { display: flex; gap: 10px; justify-content: center; margin-top: 16px; }
+
+  .ml-comandos {
+    background: rgba(66,153,225,0.1);
+    border: 1px solid rgba(66,153,225,0.3);
+    border-radius: 12px; padding: 16px 20px;
+    margin-bottom: 24px;
+  }
+  .ml-comandos h4 { font-size: 0.9em; color: var(--accent); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+  .ml-comandos-lista {
+    display: flex; flex-wrap: wrap; gap: 10px;
+    font-size: 0.85em;
+  }
+  .ml-comando-chip {
+    background: rgba(255,255,255,0.08);
+    padding: 6px 14px; border-radius: 20px;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .ml-comando-chip strong { color: var(--success); }
+
+  .ml-controles {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    margin-bottom: 24px;
+  }
+  @media (max-width: 768px) { .ml-controles { grid-template-columns: repeat(2, 1fr); } }
+  .ml-btn-control {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: white; padding: 20px;
+    border-radius: 12px; cursor: pointer;
+    font-size: 1em; font-weight: 600;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    transition: 0.2s;
+  }
+  .ml-btn-control:hover { background: rgba(255,255,255,0.15); transform: translateY(-2px); }
+  .ml-btn-control .emoji { font-size: 1.6em; }
+  .ml-btn-control.primary { background: var(--accent); border-color: var(--accent); }
+  .ml-btn-control.primary:hover { background: #3182ce; }
+  .ml-btn-control.danger { background: var(--emergencia); border-color: var(--emergencia); }
+
+  .ml-mic-status {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 20px; background: rgba(0,0,0,0.4);
+    border-radius: 30px; font-size: 0.9em;
+    border: 1px solid rgba(255,255,255,0.15);
+    align-self: center;
+  }
+  .ml-mic-dot {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--success); animation: micPulse 1.5s infinite;
+  }
+  .ml-mic-dot.inactivo { background: #666; animation: none; }
+  @keyframes micPulse { 0%,100% { opacity: 1; box-shadow: 0 0 0 0 rgba(56,161,105,0.7); } 50% { opacity: 0.7; box-shadow: 0 0 0 8px rgba(56,161,105,0); } }
+
+  .ml-finalizado {
+    text-align: center; padding: 40px;
+  }
+  .ml-finalizado .check-grande {
+    font-size: 5em; margin-bottom: 20px;
+    animation: scaleIn 0.6s;
+  }
+  @keyframes scaleIn { from { transform: scale(0); } to { transform: scale(1); } }
+  .ml-finalizado h2 { font-size: 2em; margin-bottom: 16px; color: var(--success); }
+  .ml-finalizado p { font-size: 1.1em; color: rgba(255,255,255,0.7); margin-bottom: 24px; }
+
+  .ml-voice-subtitle {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.85); color: white;
+    padding: 14px 24px; border-radius: 30px;
+    font-size: 1em; max-width: 600px;
+    border: 1px solid rgba(255,255,255,0.2);
+    opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; z-index: 9100;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .ml-voice-subtitle.show { opacity: 1; }
+  .ml-voice-subtitle .wave { animation: waveAnim 1s infinite; }
+  @keyframes waveAnim { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(1.5); } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🚨</div>
+    <div>
+      <div>Brigada de Emergencias</div>
+      <div style="font-size:0.7em;color:var(--text-dim);font-weight:400;">Bodega Central · ECU-911</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+    <div id="estadoSistema" class="status-pill">✓ Sistema operativo</div>
+    <select id="selectorSesion" class="session-select">
+      <option value="visitante">👤 Visitante (solo lectura)</option>
+      <option value="brigadista">🧑‍🚒 Brigadista</option>
+      <option value="coordinador">👨‍💼 Coordinador de Brigada</option>
+    </select>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="active" data-tab="mapa">🗺️ Mapa en vivo</button>
+  <button data-tab="personal">👥 Personal</button>
+  <button data-tab="incidentes">🚨 Incidentes</button>
+  <button data-tab="protocolos">📋 Protocolos</button>
+  <button data-tab="primeros">🩹 Primeros Auxilios</button>
+  <button data-tab="normas">⚖️ Normas</button>
+  <button data-tab="miembros" class="locked" data-lock="coordinador">🪪 Miembros</button>
+  <button data-tab="historial" class="locked" data-lock="coordinador">📁 Historial</button>
+  <button data-tab="ayuda" class="ayuda-btn">❓ Ayuda / Demo</button>
+</nav>
+
+<main>
+  <div id="mapTab" class="tab-content active">
+    <div id="mapa-container">
+      <div id="mapa">
+        <svg class="mapa-bg" viewBox="0 0 1000 750" preserveAspectRatio="xMidYMid meet">
+          <rect x="0" y="0" width="1000" height="750" fill="#1a2027"/>
+          <rect x="20" y="20" width="960" height="710" fill="#1e2530" stroke="#2d3748" stroke-dasharray="5,5"/>
+          <rect x="120" y="120" width="480" height="380" fill="#252d38" stroke="#4299e1" stroke-width="2"/>
+          <text x="360" y="150" fill="#4299e1" font-size="16" font-weight="700" text-anchor="middle">GALPÓN PRINCIPAL</text>
+          <rect x="160" y="180" width="180" height="40" fill="#2d3748" stroke="#4a5568"/>
+          <rect x="160" y="240" width="180" height="40" fill="#2d3748" stroke="#4a5568"/>
+          <rect x="160" y="300" width="180" height="40" fill="#2d3748" stroke="#4a5568"/>
+          <rect x="160" y="360" width="180" height="40" fill="#2d3748" stroke="#4a5568"/>
+          <rect x="160" y="420" width="180" height="40" fill="#2d3748" stroke="#4a5568"/>
+          <rect x="380" y="180" width="180" height="40" fill="#2d3748" stroke="#4a5568"/>
+          <rect x="380" y="240" width="180" height="40" fill="#2d3748" stroke="#4a5568"/>
+          <rect x="380" y="300" width="180" height="40" fill="#2d3748" stroke="#4a5568"/>
+          <rect x="380" y="360" width="180" height="40" fill="#2d3748" stroke="#4a5568"/>
+          <rect x="380" y="420" width="180" height="40" fill="#2d3748" stroke="#4a5568"/>
+          <rect x="640" y="120" width="220" height="180" fill="#2a3340" stroke="#4299e1" stroke-width="2"/>
+          <text x="750" y="150" fill="#4299e1" font-size="13" font-weight="700" text-anchor="middle">OFICINAS</text>
+          <line x1="640" y1="210" x2="860" y2="210" stroke="#4a5568"/>
+          <text x="700" y="185" fill="#94a3b8" font-size="10" text-anchor="middle">Planta 1</text>
+          <text x="700" y="245" fill="#94a3b8" font-size="10" text-anchor="middle">Planta 2</text>
+          <rect x="640" y="330" width="220" height="170" fill="#2a3340" stroke="#4299e1" stroke-width="2"/>
+          <text x="750" y="360" fill="#4299e1" font-size="13" font-weight="700" text-anchor="middle">COMEDOR</text>
+          <rect x="120" y="540" width="740" height="150" fill="#202834" stroke="#4299e1" stroke-width="2" stroke-dasharray="4,4"/>
+          <text x="490" y="570" fill="#4299e1" font-size="13" font-weight="700" text-anchor="middle">ESTACIONAMIENTO</text>
+          <line x1="250" y1="590" x2="250" y2="680" stroke="#4a5568" stroke-dasharray="3,3"/>
+          <line x1="380" y1="590" x2="380" y2="680" stroke="#4a5568" stroke-dasharray="3,3"/>
+          <line x1="510" y1="590" x2="510" y2="680" stroke="#4a5568" stroke-dasharray="3,3"/>
+          <line x1="640" y1="590" x2="640" y2="680" stroke="#4a5568" stroke-dasharray="3,3"/>
+          <line x1="770" y1="590" x2="770" y2="680" stroke="#4a5568" stroke-dasharray="3,3"/>
+          <rect x="600" y="120" width="40" height="380" fill="#1a2027" stroke="#4a5568" stroke-dasharray="3,3"/>
+        </svg>
+        <div id="markersLayer"></div>
+      </div>
+    </div>
+    <div class="leyenda">
+      <div style="font-weight:700;margin-bottom:6px;">Leyenda</div>
+      <div class="leyenda-item"><div class="leyenda-color" style="background:var(--emergencia)"></div>Emergencias</div>
+      <div class="leyenda-item"><div class="leyenda-color" style="background:var(--rescatista)"></div>Rescatistas</div>
+      <div class="leyenda-item"><div class="leyenda-color" style="background:var(--incendios)"></div>Anti-incendios</div>
+      <div class="leyenda-item"><div class="leyenda-color" style="background:#22c55e;border-radius:4px"></div>Salida emergencia</div>
+      <div class="leyenda-item"><div class="leyenda-color" style="background:#f59e0b"></div>Punto de encuentro</div>
+    </div>
+  </div>
+
+  <div id="personalTab" class="tab-content">
+    <div class="section-title">👥 Personal en bodega y alrededores</div>
+    <div class="grid-3 mb-10">
+      <div class="card stat"><div class="num" style="color:var(--accent);" id="statTotal">0</div><div class="lbl">Total en instalaciones</div></div>
+      <div class="card stat"><div class="num" style="color:var(--success);" id="statDentro">0</div><div class="lbl">Dentro de bodega</div></div>
+      <div class="card stat"><div class="num" style="color:var(--warning);" id="statAlrededores">0</div><div class="lbl">En alrededores</div></div>
+    </div>
+    <div class="grid-3 mb-10">
+      <div class="card stat emergencia"><div class="num" id="statEmergencia">0</div><div class="lbl">🚑 Emergencias</div></div>
+      <div class="card stat rescatista"><div class="num" id="statRescatista">0</div><div class="lbl">🧗 Rescatistas</div></div>
+      <div class="card stat incendios"><div class="num" id="statIncendios">0</div><div class="lbl">🔥 Anti-incendios</div></div>
+    </div>
+    <div class="card">
+      <div class="flex-between mb-10">
+        <h3 style="margin:0;">Registro de personal</h3>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-success btn-sm" onclick="entradaMasiva()">↓ Entrada masiva</button>
+          <button class="btn btn-ghost btn-sm" onclick="salidaMasiva()">↑ Salida masiva</button>
+        </div>
+      </div>
+      <div id="listaPersonal"></div>
+    </div>
+  </div>
+
+  <div id="incidentesTab" class="tab-content">
+    <div class="section-title">🚨 Gestión de incidentes</div>
+    <div id="alertaActiva"></div>
+    <div class="card">
+      <div class="cronometro-lbl">Tiempo transcurrido desde el incidente</div>
+      <div id="cronometro" class="cronometro inactivo">00:00:00</div>
+      <div style="text-align:center;">
+        <button class="btn btn-danger" id="btnNuevoIncidente" onclick="abrirModalIncidente()">+ Declarar nuevo incidente</button>
+        <button class="btn btn-ghost" id="btnFinalizarIncidente" onclick="finalizarIncidente()" style="display:none;">✓ Finalizar incidente</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Información del incidente activo</h3>
+      <div id="infoIncidente" class="empty">No hay incidente activo</div>
+    </div>
+    <div class="card">
+      <h3>Protocolos de actuación recomendados</h3>
+      <div id="protocolosRecomendados" class="empty">Seleccione un tipo de incidente para ver los protocolos</div>
+    </div>
+  </div>
+
+  <div id="protocolosTab" class="tab-content">
+    <div class="section-title">📋 Protocolos de actuación</div>
+    <div id="listaProtocolos"></div>
+  </div>
+
+  <div id="primerosTab" class="tab-content">
+    <div class="section-title">🩹 Primeros Auxilios</div>
+    <div class="alert-banner" style="background:var(--accent);">
+      🎥 Pulsa cualquier video para reproducirlo · 🎙️ Usa el botón verde <strong>"Modo Manos Libres"</strong> para guiado por voz paso a paso
+    </div>
+    <div id="listaPrimeros"></div>
+  </div>
+
+  <div id="normasTab" class="tab-content">
+    <div class="section-title">⚖️ Normativa aplicable (Ecuador)</div>
+    <div class="alert-banner" style="background:var(--warning);">
+      ⚠ Verifique siempre la vigencia de cada norma con la entidad oficial correspondiente.
+    </div>
+    <div id="listaNormas"></div>
+  </div>
+
+  <div id="miembrosTab" class="tab-content">
+    <div class="section-title">🪪 Gestión de miembros de la brigada</div>
+    <button class="btn btn-primary mb-10" onclick="abrirModalMiembro()">+ Agregar miembro</button>
+    <div id="listaMiembros"></div>
+  </div>
+
+  <div id="historialTab" class="tab-content">
+    <div class="section-title">📁 Historial de incidentes</div>
+    <button class="btn btn-primary mb-10" onclick="exportarHistorial()">⬇ Exportar historial</button>
+    <div id="listaHistorial"></div>
+  </div>
+
+  <div id="ayudaTab" class="tab-content">
+    <div class="ayuda-hero">
+      <h1>❓ Centro de Ayuda y Demo</h1>
+      <p>Guía interactiva para brigadistas, coordinadores y personal nuevo. Sigue el tour paso a paso o consulta las secciones de referencia rápida.</p>
+      <div class="mt-10" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="iniciarTour()">▶ Iniciar tour guiado</button>
+        <button class="btn btn-ghost" onclick="resetTour()">↺ Reiniciar progreso</button>
+        <button class="btn btn-ghost" onclick="document.getElementById('faqSection').scrollIntoView({behavior:'smooth'})">💬 Ir a preguntas frecuentes</button>
+      </div>
+    </div>
+
+    <div class="check-progress">
+      <span class="progress-label">Progreso del tour:</span>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <span class="progress-label" id="progressText">0 / 8</span>
+    </div>
+
+    <div class="section-title">🎬 Tour guiado — 8 pasos para dominar la app</div>
+    <div id="tourPasos"></div>
+
+    <div class="card mt-10">
+      <h3>👥 Roles y permisos</h3>
+      <table class="rol-tabla">
+        <thead><tr><th>Rol</th><th>Cantidad</th><th>Responsabilidad principal</th><th>Prioridad en incidente</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge-rol emergencia">🚑 Emergencias</span></td><td>3</td><td>Atención inicial, evaluación médica, comunicación con ECU-911</td><td>Derrames, accidentes</td></tr>
+          <tr><td><span class="badge-rol rescatista">🧗 Rescatista</span></td><td>4</td><td>Evacuación, rescate de personas, rutas seguras</td><td>Rescates, evacuaciones</td></tr>
+          <tr><td><span class="badge-rol incendios">🔥 Anti-incendios</span></td><td>3</td><td>Control de fuego, uso de extintores, corte de energía</td><td>Incendios, explosiones</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>⚡ Guía rápida por tarea</h3>
+      <div class="grid-2">
+        <div>
+          <strong style="color:var(--accent);">🆘 Reportar una emergencia</strong>
+          <ol style="margin:8px 0 16px 20px;font-size:0.85em;line-height:1.8;color:var(--text-dim);">
+            <li>Presiona el botón rojo <strong>SOS</strong> (abajo a la derecha).</li>
+            <li>Toque corto → menú con opciones (911, ambulancia, bomberos).</li>
+            <li>Mantener 1.5 s → declara emergencia inmediata a toda la brigada.</li>
+          </ol>
+          <strong style="color:var(--accent);">🎙️ Usar Modo Manos Libres</strong>
+          <ol style="margin:8px 0 16px 20px;font-size:0.85em;line-height:1.8;color:var(--text-dim);">
+            <li>Ve a <strong>🩹 Primeros Auxilios</strong>.</li>
+            <li>Expande un protocolo y pulsa <em>🎙️ Modo Manos Libres</em>.</li>
+            <li>Di <strong>"siguiente"</strong> o <strong>"repetir"</strong> sin tocar la pantalla.</li>
+          </ol>
+        </div>
+        <div>
+          <strong style="color:var(--accent);">📍 Cambiar estado de un brigadista</strong>
+          <ol style="margin:8px 0 16px 20px;font-size:0.85em;line-height:1.8;color:var(--text-dim);">
+            <li>En el mapa, <strong>haz clic</strong> sobre su marcador, o</li>
+            <li>Ve a <strong>👥 Personal</strong> y usa el botón de su fila.</li>
+            <li>Para cambios masivos usa <em>Entrada/Salida masiva</em>.</li>
+          </ol>
+          <strong style="color:var(--accent);">📁 Consultar historial de incidentes</strong>
+          <ol style="margin:8px 0 16px 20px;font-size:0.85em;line-height:1.8;color:var(--text-dim);">
+            <li>Cambia la sesión a <strong>Coordinador</strong> (arriba derecha).</li>
+            <li>Se desbloquea <strong>📁 Historial</strong>.</li>
+            <li>Puedes <em>exportar a JSON</em> para auditorías.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title mt-10" id="faqSection">💬 Preguntas frecuentes</div>
+    <div id="faqLista"></div>
+
+    <div class="card" style="border-color:var(--accent);">
+      <h3>🎁 Mejoras integradas en este prototipo</h3>
+      <div style="font-size:0.87em;line-height:2;color:var(--text-dim);">
+        <div>🧪 <strong>Modo simulacro</strong> — entrena sin llamar al 911 <span class="badge-tip success">Disponible</span></div>
+        <div>🎯 <strong>Asignación automática de equipo</strong> según categoría <span class="badge-tip success">Activo</span></div>
+        <div>💾 <strong>Persistencia offline</strong> con localStorage <span class="badge-tip success">Activo</span></div>
+        <div>👤 <strong>Sesiones diferenciadas</strong> (Visitante / Brigadista / Coordinador) <span class="badge-tip success">Activo</span></div>
+        <div>🔔 <strong>Notificaciones toast</strong> de retroalimentación <span class="badge-tip success">Activo</span></div>
+        <div>🚨 <strong>SOS escalonado</strong> (toque corto vs mantener) <span class="badge-tip success">Activo</span></div>
+        <div>🎥 <strong>Videos tutoriales</strong> de primeros auxilios <span class="badge-tip success">Nuevo</span></div>
+        <div>🎙️ <strong>Modo Manos Libres por voz</strong> con comandos <span class="badge-tip success">Nuevo</span></div>
+        <div>📲 <strong>Push a brigada</strong> (simulado) <span class="badge-tip warn">Demo</span></div>
+        <div>📷 <strong>QR/NFC para check-in</strong> <span class="badge-tip">Fase 2</span></div>
+        <div>📡 <strong>Beacons indoor positioning</strong> <span class="badge-tip">Fase 2</span></div>
+        <div>🔗 <strong>Firebase Realtime</strong> para GPS real <span class="badge-tip">Fase 2</span></div>
+      </div>
+    </div>
+    <div style="height:100px;"></div>
+  </div>
+</main>
+
+<!-- Botón SOS -->
+<button class="sos-btn" id="sosBtn" onmousedown="iniciarSOS()" onmouseup="cancelarSOS()" onmouseleave="cancelarSOS()" onclick="toggleSOSMenu(event)">
+  <span class="sos-icon">🚨</span>
+  <span style="font-size:0.7em;">SOS</span>
+</button>
+
+<button class="btn-flotante-ayuda" onclick="irAAyuda()" title="Ayuda / Demo">❓</button>
+
+<div class="sos-menu" id="sosMenu">
+  <div style="padding:8px;font-size:0.75em;color:var(--text-dim);border-bottom:1px solid var(--border);margin-bottom:4px;">
+    Toque corto: llamar ECU-911<br>Mantener presionado: emergencia brigada
+  </div>
+  <button class="danger" onclick="llamar911()">📞 Llamar al ECU-911</button>
+  <button class="danger" onclick="declararEmergenciaRapida()">🚨 Declarar emergencia de brigada</button>
+  <button onclick="llamar911()">🏥 Llamar ambulancia</button>
+  <button onclick="llamar911()">🚒 Llamar bomberos</button>
+</div>
+
+<!-- MODAL VIDEO -->
+<div class="video-modal" id="videoModal">
+  <div class="video-modal-content">
+    <div class="video-modal-header">
+      <h3 id="videoModalTitle">🎥 Video tutorial</h3>
+      <button class="close-video" onclick="cerrarVideo()">✕</button>
+    </div>
+    <div class="video-modal-body" id="videoModalBody"></div>
+    <div class="video-modal-footer">
+      <div class="nota" id="videoModalNota"></div>
+      <button class="btn btn-ghost" onclick="cerrarVideo()">Cerrar</button>
+      <button class="btn btn-danger" onclick="abrirEnYouTube()">▶ Ver en YouTube</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ OVERLAY MODO MANOS LIBRES ============ -->
+<div class="manos-libres-overlay" id="manosLibresOverlay">
+  <div class="ml-header">
+    <h2>🎙️ <span id="mlTitulo">Modo Manos Libres</span></h2>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <span class="ml-progress" id="mlProgress">Paso 1 / 8</span>
+      <button class="ml-close" onclick="salirManosLibres()">✕ Salir (o di "salir")</button>
+    </div>
+  </div>
+
+  <div class="ml-body" id="mlBody">
+    <!-- Contenido dinámico -->
+  </div>
+
+  <div class="ml-voice-subtitle" id="mlSubtitle">
+    <span class="wave">🎤</span>
+    <span id="mlSubtitleText">Escuchando...</span>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   ESTADO GLOBAL
+============================================================ */
+const ROLES = {
+  emergencia: { nombre: 'Emergencias', color: '#e63946', icon: '🚑' },
+  rescatista: { nombre: 'Rescatista', color: '#2a9d8f', icon: '🧗' },
+  incendios:  { nombre: 'Anti-incendios', color: '#e76f51', icon: '🔥' }
+};
+
+let miembros = [
+  { id: 1, nombre: 'Carlos Mendoza', rol: 'emergencia', estado: 'dentro', x: 300, y: 250, iniciales: 'CM', activo: true },
+  { id: 2, nombre: 'María Fernández', rol: 'emergencia', estado: 'dentro', x: 450, y: 300, iniciales: 'MF', activo: true },
+  { id: 3, nombre: 'José Ramírez', rol: 'emergencia', estado: 'alrededores', x: 850, y: 600, iniciales: 'JR', activo: true },
+  { id: 4, nombre: 'Ana Torres', rol: 'rescatista', estado: 'dentro', x: 200, y: 400, iniciales: 'AT', activo: true },
+  { id: 5, nombre: 'Luis Paredes', rol: 'rescatista', estado: 'dentro', x: 520, y: 220, iniciales: 'LP', activo: true },
+  { id: 6, nombre: 'Sofía Castro', rol: 'rescatista', estado: 'dentro', x: 700, y: 400, iniciales: 'SC', activo: true },
+  { id: 7, nombre: 'Diego Vargas', rol: 'rescatista', estado: 'alrededores', x: 880, y: 350, iniciales: 'DV', activo: true },
+  { id: 8, nombre: 'Elena Ríos', rol: 'incendios', estado: 'dentro', x: 380, y: 450, iniciales: 'ER', activo: true },
+  { id: 9, nombre: 'Pedro Guzmán', rol: 'incendios', estado: 'dentro', x: 600, y: 350, iniciales: 'PG', activo: true },
+  { id: 10, nombre: 'Lucía Herrera', rol: 'incendios', estado: 'alrededores', x: 750, y: 650, iniciales: 'LH', activo: true }
+];
+
+let incidenteActivo = null;
+let cronometroInterval = null;
+let historial = [];
+let sesionActual = 'visitante';
+let modoSimulacro = false;
+let sosTimer = null;
+let sosPresionado = false;
+let videoActual = null;
+
+/* Estado del Modo Manos Libres */
+const ML = {
+  activo: false,
+  protocolo: null,
+  pasoActual: 0,
+  reconocimiento: null,
+  escuchando: false,
+  metronomoInterval: null,
+  metronomoActivo: false,
+  bpm: 110,
+  vozSeleccionada: null
+};
+
+const SALIDAS = [
+  { id: 'SE-1', nombre: 'Salida Emergencia 1', x: 120, y: 300 },
+  { id: 'SE-2', nombre: 'Salida Emergencia 2', x: 600, y: 520 },
+  { id: 'SE-3', nombre: 'Salida Emergencia 3', x: 860, y: 240 }
+];
+
+const PUNTOS_ENCUENTRO = [
+  { id: 'PE-1', nombre: 'Punto de Encuentro 1', x: 100, y: 620 },
+  { id: 'PE-2', nombre: 'Punto de Encuentro 2', x: 880, y: 560 }
+];
+
+const TOUR_PASOS = [
+  { id: 'paso1', titulo: '🗺️ Explora el mapa en vivo', descripcion: 'Ve a la pestaña <strong>Mapa en vivo</strong>. Verás 10 brigadistas moviéndose en tiempo real sobre el plano de la bodega.', accion: 'Ir al mapa', irA: 'mapa' },
+  { id: 'paso2', titulo: '👆 Cambia el estado de un brigadista', descripcion: 'Haz <strong>clic sobre cualquier marcador</strong> del mapa para alternar su entrada/salida.', accion: 'Probar ahora', irA: 'mapa' },
+  { id: 'paso3', titulo: '👥 Revisa la pestaña Personal', descripcion: 'Ve a <strong>👥 Personal</strong> para ver contadores y la lista completa.', accion: 'Ir a Personal', irA: 'personal' },
+  { id: 'paso4', titulo: '🚨 Declara un incidente', descripcion: 'En <strong>🚨 Incidentes</strong>, pulsa <em>+ Declarar nuevo incidente</em>. El cronómetro arranca y se asigna el equipo.', accion: 'Ir a Incidentes', irA: 'incidentes' },
+  { id: 'paso5', titulo: '🧪 Activa el modo simulacro', descripcion: 'Al declarar un incidente, marca <strong>Modo simulacro</strong>. Ideal para entrenamientos.', accion: 'Probar simulacro', irA: 'incidentes' },
+  { id: 'paso6', titulo: '🚨 Domina el botón SOS', descripcion: 'Toque corto → menú. Mantener 1.5 s → emergencia inmediata.', accion: 'Ver menú SOS', irA: 'ayuda', extra: 'sos' },
+  { id: 'paso7', titulo: '🎥 Mira los videos de primeros auxilios', descripcion: 'En <strong>🩹 Primeros Auxilios</strong> cada procedimiento tiene un video tutorial.', accion: 'Ver videos', irA: 'primeros' },
+  { id: 'paso8', titulo: '🎙️ Prueba el Modo Manos Libres', descripcion: 'Activa el guiado por voz para RCP u otros protocolos. Di <strong>"siguiente"</strong>, <strong>"repetir"</strong> o <strong>"salir"</strong> sin tocar la pantalla.', accion: 'Probar Manos Libres', irA: 'primeros', extra: 'voz' }
+];
+
+const FAQ_ITEMS = [
+  { p: '¿Qué hago si presiono SOS por error?', r: 'Ve a 🚨 Incidentes → pulsa <strong>✓ Finalizar incidente</strong> y reporta al coordinador. Quedará registrado como "falso positivo".' },
+  { p: '¿La app funciona sin internet dentro de la bodega?', r: 'Sí. Usa <code>localStorage</code>, por lo que los datos persisten. En producción se sincronizará con Firebase.' },
+  { p: '¿Cómo funciona el Modo Manos Libres?', r: 'Activa el botón verde en cualquier protocolo de primeros auxilios. La app leerá cada paso en voz alta y escuchará comandos como <strong>"siguiente"</strong>, <strong>"repetir"</strong>, <strong>"atrás"</strong>, <strong>"pausa"</strong> o <strong>"salir"</strong>. Incluye metrónomo a 110 BPM para RCP.' },
+  { p: '¿Por qué mi ubicación no es exacta dentro del galpón?', r: 'El GPS tiene error de 5-15 m en interiores por el techo metálico. La solución real es <strong>beacons BLE / WiFi RTT</strong>, en fase 2.' },
+  { p: '¿Cómo agrego un brigadista nuevo?', r: 'Cambia a <strong>Coordinador</strong> → <strong>🪪 Miembros</strong> → <em>+ Agregar miembro</em>.' },
+  { p: '¿Puedo probar todo sin afectar registros reales?', r: 'Sí. Marca <strong>Modo simulacro</strong> al declarar cualquier incidente.' },
+  { p: '¿Los videos de primeros auxilios son oficiales?', r: 'Provienen de YouTube. <strong>No sustituyen capacitación certificada</strong>.' },
+  { p: '¿El Modo Manos Libres funciona sin internet?', r: 'Sí. Usa la <code>Web Speech API</code> del navegador (SpeechSynthesis + SpeechRecognition), que funciona offline en la mayoría de navegadores modernos.' }
+];
+
+const PROTOCOLOS = [
+  { id: 'incendio', titulo: '🔥 Protocolo de Incendio', pasos: [
+    { n: 1, txt: 'Dar aviso inmediato por radio o pulsando el botón SOS de brigada.', urgente: true },
+    { n: 2, txt: 'Evaluar magnitud del fuego. Si es pequeño, usar extintor (técnica P.A.S.S.).', urgente: true },
+    { n: 3, txt: 'P.A.S.S.: Pulsar la palanca, Apuntar a la base, Squeeze (presionar), Sweep (barrer en zigzag).' },
+    { n: 4, txt: 'Cortar energía eléctrica y suministro de gas de la zona afectada.' },
+    { n: 5, txt: 'Evacuar al personal por las salidas de emergencia.', urgente: true },
+    { n: 6, txt: 'Reagrupar en el punto de encuentro y pasar lista.' },
+    { n: 7, txt: 'Recibir a bomberos e informar ubicación y tipo de material en combustión.' },
+    { n: 8, txt: 'NO reingresar hasta autorización de bomberos.' }
+  ]},
+  { id: 'rescate', titulo: '🧗 Protocolo de Rescate y Evacuación', pasos: [
+    { n: 1, txt: 'Confirmar la ubicación exacta y el número de personas atrapadas.', urgente: true },
+    { n: 2, txt: 'Asegurar la escena: cortar energía, bloquear maquinaria, señalizar área.' },
+    { n: 3, txt: 'Designar un jefe de rescate y asignar roles específicos.' },
+    { n: 4, txt: 'Usar EPP adecuado: casco, guantes, arnés, botas de seguridad.' },
+    { n: 5, txt: 'Establecer ruta de acceso y ruta de evacuación alterna.' },
+    { n: 6, txt: 'Comunicar periódicamente avances por radio.' },
+    { n: 7, txt: 'Trasladar a los rescatados a zona segura y aplicar primeros auxilios.' },
+    { n: 8, txt: 'Registrar nombres y estado de los rescatados.' }
+  ]},
+  { id: 'derrame', titulo: '🧪 Protocolo de Derrame Químico', pasos: [
+    { n: 1, txt: 'Alertar al personal cercano y evacuar la zona afectada.', urgente: true },
+    { n: 2, txt: 'Identificar la sustancia usando la hoja de seguridad (MSDS).' },
+    { n: 3, txt: 'Usar EPP químico: guantes, gafas, mascarilla, traje si es corrosivo.' },
+    { n: 4, txt: 'Contener el derrame con material absorbente.' },
+    { n: 5, txt: 'No usar agua si la sustancia reacciona violentamente con ella.' },
+    { n: 6, txt: 'Ventilar el área si es un químico volátil.' },
+    { n: 7, txt: 'Recoger residuos en contenedores etiquetados.' },
+    { n: 8, txt: 'Reportar el incidente y registrar en bitácora.' }
+  ]},
+  { id: 'evacuacion', titulo: '🚪 Protocolo de Evacuación General', pasos: [
+    { n: 1, txt: 'Activar alarma de evacuación.', urgente: true },
+    { n: 2, txt: 'Guiar al personal por rutas señalizadas hacia salidas.', urgente: true },
+    { n: 3, txt: 'Verificar que no quede nadie en baños, oficinas, vestuarios y galpón.' },
+    { n: 4, txt: 'Reagrupar en el punto de encuentro más cercano.' },
+    { n: 5, txt: 'Pasar lista con el registro de personal de la app.' },
+    { n: 6, txt: 'Reportar personas faltantes al coordinador y a bomberos.' },
+    { n: 7, txt: 'Mantener al personal en el punto de encuentro hasta autorización.' }
+  ]}
+];
+
+/* ============================================================
+   PRIMEROS AUXILIOS — VIDEOS ACTUALIZADOS
+============================================================ */
+const PRIMEROS_AUXILIOS = [
+  {
+    id: 'rcp',
+    titulo: '❤️ RCP (Reanimación Cardiopulmonar)',
+    pasos: [
+      { n: 1, txt: 'Verificar consciencia y respiración. Sacudir suavemente y preguntar "¿Está bien?".', urgente: true },
+      { n: 2, txt: 'Llamar al 911 / ECU-911 inmediatamente o pedir a alguien que lo haga.', urgente: true },
+      { n: 3, txt: 'Colocar a la persona boca arriba sobre superficie firme.' },
+      { n: 4, txt: 'Colocar el talón de una mano en el centro del pecho, la otra encima, entrelazando dedos.' },
+      { n: 5, txt: 'Comprimir fuerte y rápido: 30 compresiones a 100-120 por minuto, 5-6 cm de profundidad.' },
+      { n: 6, txt: 'Inclinar la cabeza hacia atrás, levantar el mentón y dar 2 ventilaciones de 1 segundo.' },
+      { n: 7, txt: 'Repetir ciclo 30:2 hasta que llegue ayuda o la persona reaccione.' },
+      { n: 8, txt: 'Usar DEA (desfibrilador) si está disponible y seguir sus instrucciones.' }
+    ],
+    videos: [
+      { id: '15uIXFQm8pE', titulo: '¿Sabes cómo realizar una RCP de forma adecuada?', canal: 'Pídeme', duracion: 'Short', nota: 'Demostración breve de RCP en formato vertical.', esShort: true }
+    ]
+  },
+  {
+    id: 'hemorragia',
+    titulo: '🩸 Control de Hemorragias',
+    pasos: [
+      { n: 1, txt: 'Colocarse guantes si es posible. Evitar contacto directo con sangre.', urgente: true },
+      { n: 2, txt: 'Aplicar presión directa sobre la herida con gasa o paño limpio.', urgente: true },
+      { n: 3, txt: 'No retirar el apósito si se empapa; añadir más encima y seguir presionando.' },
+      { n: 4, txt: 'Elevar la extremidad por encima del nivel del corazón si es posible.' },
+      { n: 5, txt: 'Si la hemorragia es masiva en extremidad, aplicar torniquete 5-7 cm por encima de la herida.' },
+      { n: 6, txt: 'Anotar la hora de colocación del torniquete y no aflojarlo.' },
+      { n: 7, txt: 'Cubrir con vendaje y trasladar a centro médico de inmediato.' }
+    ],
+    videos: [
+      { id: 'p7UNkf-06EY', titulo: 'Control de Hemorragias', canal: 'Primeros Auxilios', duracion: 'Video', nota: 'Cómo controlar una hemorragia con presión directa y torniquete.' }
+    ]
+  },
+  {
+    id: 'fracturas',
+    titulo: '🦴 Fracturas y Esguinces',
+    pasos: [
+      { n: 1, txt: 'No mover a la persona si se sospecha lesión de columna o cuello.', urgente: true },
+      { n: 2, txt: 'Inmovilizar la zona afectada en la posición encontrada.' },
+      { n: 3, txt: 'Usar tablillas, cartón o revistas; acolchar con tela.' },
+      { n: 4, txt: 'Aplicar frío local (hielo envuelto en tela) 15-20 min para reducir inflamación.' },
+      { n: 5, txt: 'No intentar alinear el hueso ni masajear la zona.' },
+      { n: 6, txt: 'Verificar circulación: temperatura, color y pulso distal.' },
+      { n: 7, txt: 'Trasladar a centro médico para evaluación radiológica.' }
+    ],
+    videos: [
+      { id: 'Hhg2HKiAN-o', titulo: 'Fracturas y Esguinces', canal: 'Primeros Auxilios', duracion: 'Video', nota: 'Cómo inmovilizar fracturas y tratar esguinces.' }
+    ]
+  },
+  {
+    id: 'quemaduras',
+    titulo: '🔥 Quemaduras',
+    pasos: [
+      { n: 1, txt: 'Alejar a la persona de la fuente de calor y apagar ropa en llamas (rodar).', urgente: true },
+      { n: 2, txt: 'Enfriar la zona con agua corriente a temperatura ambiente 15-20 min.' },
+      { n: 3, txt: 'No usar hielo, pasta dental, aceites ni remedios caseros.' },
+      { n: 4, txt: 'No reventar ampollas. Cubrir con gasa estéril húmeda.' },
+      { n: 5, txt: 'Retirar anillos, relojes o ropa que pueda comprimir por inflamación.' },
+      { n: 6, txt: 'No retirar ropa adherida a la quemadura.' },
+      { n: 7, txt: 'Trasladar a centro médico; quemaduras extensas o en cara/manos requieren urgencia.' }
+    ],
+    videos: [
+      { id: 'cECkv6xUuTY', titulo: 'Quemaduras', canal: 'Primeros Auxilios', duracion: 'Video', nota: 'Tratamiento inicial de quemaduras según su grado.' }
+    ]
+  },
+  {
+    id: 'asfixia',
+    titulo: '😰 Atragantamiento / Asfixia',
+    pasos: [
+      { n: 1, txt: 'Preguntar "¿Te estás atragantando?". Si tose con fuerza, animar a toser.', urgente: true },
+      { n: 2, txt: 'Si no puede toser, hablar ni respirar, aplicar 5 golpes entre los omóplatos.', urgente: true },
+      { n: 3, txt: 'Si no funciona, aplicar maniobra de Heimlich: puño sobre ombligo, comprimir hacia adentro y arriba.' },
+      { n: 4, txt: 'Alternar 5 golpes en espalda y 5 compresiones abdominales.' },
+      { n: 5, txt: 'Si pierde consciencia, iniciar RCP y llamar al 911.' },
+      { n: 6, txt: 'En embarazadas o bebés, usar técnica adaptada (compresiones torácicas).' }
+    ],
+    videos: [
+      { id: '2txGz7zLdHE', titulo: 'Atragantamiento / Asfixia', canal: 'Primeros Auxilios', duracion: 'Video', nota: 'Cómo desobstruir la vía aérea (maniobra de Heimlich).' }
+    ]
+  },
+  {
+    id: 'posicion-lateral',
+    titulo: '🛌 Posición Lateral de Seguridad (PLS)',
+    pasos: [
+      { n: 1, txt: 'Aplicar solo si la persona respira y está inconsciente.', urgente: true },
+      { n: 2, txt: 'Arrodillarse junto a la persona y colocar el brazo más cercano en ángulo recto.' },
+      { n: 3, txt: 'Cruzar el otro brazo sobre el pecho, con la mano en la mejilla opuesta.' },
+      { n: 4, txt: 'Levantar la rodilla más lejana y girar a la persona hacia usted.' },
+      { n: 5, txt: 'Asegurar que la cabeza quede ligeramente inclinada hacia atrás para mantener vía aérea abierta.' },
+      { n: 6, txt: 'Verificar respiración cada 2 minutos hasta que llegue ayuda.' }
+    ],
+    videos: [
+      { id: 'cLA-g8mWal4', titulo: 'Posición Lateral de Seguridad (PLS)', canal: 'Primeros Auxilios', duracion: 'Video', nota: 'Paso a paso para colocar a una persona inconsciente que respira.' }
+    ]
+  }
+];
+
+const NORMAS = [
+  { titulo: 'Ley de Seguridad y Salud en el Trabajo (Ecuador)', detalle: 'Establece la obligación de conformar brigadas de emergencia en centros de trabajo con más de 10 trabajadores.' },
+  { titulo: 'Norma INEN 2261', detalle: 'Señalización y demarcación de áreas de trabajo, rutas de evacuación y equipos contra incendios.' },
+  { titulo: 'Norma INEN 2262', detalle: 'Requisitos para la gestión de emergencias y conformación de brigadas.' },
+  { titulo: 'ISO 45001', detalle: 'Sistema de gestión de seguridad y salud en el trabajo.' },
+  { titulo: 'ECU-911', detalle: 'Sistema Nacional de Emergencias. Coordina bomberos, policía y ambulancias.' },
+  { titulo: 'Reglamento de Prevención de Incendios', detalle: 'Cuerpo de Bomberos local. Requiere extintores, salidas de emergencia y simulacros.' },
+  { titulo: 'Código de Trabajo (Ecuador)', detalle: 'Art. 410 y ss. sobre riesgos laborales.' }
+];
+
+/* ============================================================
+   INICIALIZACIÓN
+============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  renderProtocolos();
+  renderPrimerosAuxilios();
+  renderNormas();
+  renderPersonal();
+  renderMiembros();
+  renderHistorial();
+  renderMapa();
+  actualizarEstados();
+  configurarTabs();
+  configurarSesion();
+  cargarDeStorage();
+  iniciarMovimientoGPS();
+  renderTour();
+  renderFAQ();
+  cargarProgresoTour();
+  seleccionarVozEspanol();
+});
+
+/* ============================================================
+   TABS
+============================================================ */
+function configurarTabs() {
+  document.querySelectorAll('nav.tabs button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.classList.contains('locked')) {
+        toast('🔒 Requiere sesión de Coordinador para acceder', 'error');
+        return;
+      }
+      document.querySelectorAll('nav.tabs button').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.tab + 'Tab').classList.add('active');
+    });
+  });
+}
+
+function irATab(tab) {
+  const btn = document.querySelector(`nav.tabs button[data-tab="${tab}"]`);
+  if (btn && !btn.classList.contains('locked')) btn.click();
+}
+
+function irAAyuda() {
+  const btn = document.querySelector('nav.tabs button[data-tab="ayuda"]');
+  if (btn) btn.click();
+}
+
+function configurarSesion() {
+  document.getElementById('selectorSesion').addEventListener('change', (e) => {
+    sesionActual = e.target.value;
+    document.querySelectorAll('nav.tabs button[data-lock="coordinador"]').forEach(btn => {
+      if (sesionActual === 'coordinador') btn.classList.remove('locked');
+      else { btn.classList.add('locked'); btn.classList.remove('active'); }
+    });
+    toast(`Sesión: ${e.target.options[e.target.selectedIndex].text}`);
+    renderHistorial();
+  });
+}
+
+/* ============================================================
+   MAPA
+============================================================ */
+function renderMapa() {
+  const layer = document.getElementById('markersLayer');
+  layer.innerHTML = '';
+
+  SALIDAS.forEach(s => {
+    const div = document.createElement('div');
+    div.className = 'marker salida';
+    div.style.left = (s.x / 1000 * 100) + '%';
+    div.style.top = (s.y / 750 * 100) + '%';
+    div.innerHTML = `<div class="dot">🚪</div><div class="label">${s.id}</div>`;
+    div.title = s.nombre;
+    layer.appendChild(div);
+  });
+
+  PUNTOS_ENCUENTRO.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'marker punto-encuentro';
+    div.style.left = (p.x / 1000 * 100) + '%';
+    div.style.top = (p.y / 750 * 100) + '%';
+    div.innerHTML = `<div class="dot">📍</div><div class="label">${p.id}</div>`;
+    div.title = p.nombre;
+    layer.appendChild(div);
+  });
+
+  if (incidenteActivo && incidenteActivo.x) {
+    const div = document.createElement('div');
+    div.className = 'marker incidente';
+    div.style.left = (incidenteActivo.x / 1000 * 100) + '%';
+    div.style.top = (incidenteActivo.y / 750 * 100) + '%';
+    div.innerHTML = `<div class="dot">⚠</div><div class="label">INCIDENTE</div>`;
+    layer.appendChild(div);
+  }
+
+  miembros.filter(m => m.activo).forEach(m => {
+    const div = document.createElement('div');
+    div.className = `marker ${m.rol}`;
+    div.style.left = (m.x / 1000 * 100) + '%';
+    div.style.top = (m.y / 750 * 100) + '%';
+    div.innerHTML = `<div class="dot">${m.iniciales}</div><div class="label">${m.nombre} · ${m.estado === 'dentro' ? '🟢 Dentro' : '🟡 Alrededores'}</div>`;
+    div.onclick = () => toggleEstadoMiembro(m.id);
+    div.title = `${m.nombre} - Clic para cambiar entrada/salida`;
+    layer.appendChild(div);
+  });
+}
+
+function iniciarMovimientoGPS() {
+  setInterval(() => {
+    miembros.forEach(m => {
+      if (!m.activo) return;
+      m.x += (Math.random() - 0.5) * 18;
+      m.y += (Math.random() - 0.5) * 18;
+      m.x = Math.max(30, Math.min(970, m.x));
+      m.y = Math.max(30, Math.min(720, m.y));
+      actualizarZona(m);
+    });
+    renderMapa();
+  }, 900);
+}
+
+function actualizarZona(m) {
+  const dentroGalpon = m.x >= 120 && m.x <= 600 && m.y >= 120 && m.y <= 500;
+  const dentroOficinas = m.x >= 640 && m.x <= 860 && m.y >= 120 && m.y <= 300;
+  const dentroComedor = m.x >= 640 && m.x <= 860 && m.y >= 330 && m.y <= 500;
+  const nuevoEstado = (dentroGalpon || dentroOficinas || dentroComedor) ? 'dentro' : 'alrededores';
+  if (m.estado !== nuevoEstado) {
+    m.estado = nuevoEstado;
+    renderPersonal();
+    actualizarEstados();
+  }
+}
+
+/* ============================================================
+   PERSONAL
+============================================================ */
+function renderPersonal() {
+  const cont = document.getElementById('listaPersonal');
+  const activos = miembros.filter(m => m.activo);
+  if (activos.length === 0) { cont.innerHTML = '<div class="empty">No hay personal registrado</div>'; return; }
+  cont.innerHTML = activos.map(m => `
+    <div class="persona-item">
+      <div class="persona-info">
+        <span class="badge-rol ${m.rol}">${ROLES[m.rol].icon} ${ROLES[m.rol].nombre}</span>
+        <strong>${m.nombre}</strong>
+        <span style="color:var(--text-dim);font-size:0.85em;">${m.estado === 'dentro' ? '🟢 Dentro de bodega' : '🟡 Alrededores'}</span>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="toggleEstadoMiembro(${m.id})">${m.estado === 'dentro' ? '↑ Marcar salida' : '↓ Marcar entrada'}</button>
+    </div>
+  `).join('');
+}
+
+function toggleEstadoMiembro(id) {
+  const m = miembros.find(x => x.id === id);
+  if (!m) return;
+  m.estado = m.estado === 'dentro' ? 'alrededores' : 'dentro';
+  renderPersonal(); renderMapa(); actualizarEstados();
+  toast(`${m.nombre} → ${m.estado === 'dentro' ? 'Dentro' : 'Alrededores'}`, 'success');
+  guardarEnStorage();
+}
+
+function entradaMasiva() {
+  miembros.forEach(m => { if (m.activo) m.estado = 'dentro'; });
+  renderPersonal(); renderMapa(); actualizarEstados();
+  toast('✓ Entrada masiva registrada', 'success');
+}
+
+function salidaMasiva() {
+  miembros.forEach(m => { if (m.activo) m.estado = 'alrededores'; });
+  renderPersonal(); renderMapa(); actualizarEstados();
+  toast('✓ Salida masiva registrada', 'success');
+}
+
+function actualizarEstados() {
+  const activos = miembros.filter(m => m.activo);
+  document.getElementById('statTotal').textContent = activos.length;
+  document.getElementById('statDentro').textContent = activos.filter(m => m.estado === 'dentro').length;
+  document.getElementById('statAlrededores').textContent = activos.filter(m => m.estado === 'alrededores').length;
+  document.getElementById('statEmergencia').textContent = activos.filter(m => m.rol === 'emergencia').length;
+  document.getElementById('statRescatista').textContent = activos.filter(m => m.rol === 'rescatista').length;
+  document.getElementById('statIncendios').textContent = activos.filter(m => m.rol === 'incendios').length;
+}
+
+/* ============================================================
+   INCIDENTES
+============================================================ */
+function abrirModalIncidente() {
+  const modal = document.getElementById('modalContent');
+  modal.innerHTML = `
+    <h2>🚨 Declarar nuevo incidente</h2>
+    <div class="form-row"><label>Categoría</label>
+      <select id="incCategoria">
+        <option value="incendio">🔥 Incendio</option>
+        <option value="rescate">🧗 Rescate / Evacuación</option>
+        <option value="derrame">🧪 Derrame químico</option>
+        <option value="accidente">🩹 Accidente laboral</option>
+      </select>
+    </div>
+    <div class="form-row"><label>Ubicación / zona</label><input id="incUbicacion" placeholder="Ej: Galpón principal, pasillo 3" /></div>
+    <div class="form-row"><label>Descripción</label><textarea id="incDescripcion" rows="3" placeholder="Describa brevemente lo ocurrido..."></textarea></div>
+    <div class="form-row"><label><input type="checkbox" id="incSimulacro" style="width:auto;"> Modo simulacro (no llama al 911)</label></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-danger" onclick="crearIncidente()">🚨 Declarar incidente</button>
+    </div>
+  `;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+function crearIncidente() {
+  const cat = document.getElementById('incCategoria').value;
+  const ubic = document.getElementById('incUbicacion').value || 'No especificada';
+  const desc = document.getElementById('incDescripcion').value || 'Sin descripción';
+  modoSimulacro = document.getElementById('incSimulacro').checked;
+
+  const ubicaciones = { incendio: { x: 350, y: 250 }, rescate: { x: 500, y: 350 }, derrame: { x: 250, y: 400 }, accidente: { x: 700, y: 250 } };
+
+  incidenteActivo = { id: Date.now(), categoria: cat, ubicacion: ubic, descripcion: desc, inicio: Date.now(), x: ubicaciones[cat].x, y: ubicaciones[cat].y, simulacro: modoSimulacro };
+
+  document.getElementById('cronometro').classList.remove('inactivo');
+  document.getElementById('btnNuevoIncidente').style.display = 'none';
+  document.getElementById('btnFinalizarIncidente').style.display = 'inline-block';
+  document.getElementById('estadoSistema').className = 'status-pill alert';
+  document.getElementById('estadoSistema').textContent = modoSimulacro ? '🧪 SIMULACRO ACTIVO' : '🚨 EMERGENCIA ACTIVA';
+
+  cronometroInterval = setInterval(actualizarCronometro, 1000);
+  actualizarCronometro();
+
+  const rolAsignado = { incendio: 'incendios', rescate: 'rescatista', derrame: 'emergencia', accidente: 'emergencia' }[cat];
+  const equipo = miembros.filter(m => m.activo && m.rol === rolAsignado).map(m => m.nombre).join(', ');
+
+  document.getElementById('alertaActiva').innerHTML = `
+    <div class="alert-banner" style="${modoSimulacro ? 'background:var(--warning);' : ''}">
+      <div>
+        <strong>${modoSimulacro ? '🧪 SIMULACRO' : '🚨 EMERGENCIA'} ACTIVA</strong> · ${PROTOCOLOS.find(p => p.id === cat)?.titulo || cat}
+        <div style="font-size:0.85em;margin-top:4px;">📍 ${ubic} · ${desc}</div>
+        <div style="font-size:0.8em;margin-top:4px;">👥 Equipo asignado: ${equipo || 'Sin asignar'}</div>
+      </div>
+    </div>
+  `;
+  document.getElementById('infoIncidente').innerHTML = `
+    <div class="persona-item"><strong>Categoría:</strong> ${cat}</div>
+    <div class="persona-item"><strong>Ubicación:</strong> ${ubic}</div>
+    <div class="persona-item"><strong>Descripción:</strong> ${desc}</div>
+    <div class="persona-item"><strong>Inicio:</strong> ${new Date(incidenteActivo.inicio).toLocaleString()}</div>
+    <div class="persona-item"><strong>Equipo:</strong> ${equipo}</div>
+    ${modoSimulacro ? '<div class="persona-item" style="color:var(--warning);">🧪 Modo simulacro activo</div>' : ''}
+  `;
+  const prot = PROTOCOLOS.find(p => p.id === cat);
+  document.getElementById('protocolosRecomendados').innerHTML = prot
+    ? `<div class="protocolo open"><div class="protocolo-header">${prot.titulo}</div><div class="protocolo-body">${prot.pasos.map(p => `<div class="paso ${p.urgente ? 'urgente' : ''}"><div class="paso-num">${p.n}</div><div>${p.txt}</div></div>`).join('')}</div></div>`
+    : '<div class="empty">Sin protocolo específico</div>';
+
+  renderMapa();
+  cerrarModal();
+  toast(`🚨 Incidente declarado: ${cat}`, 'error');
+  if (!modoSimulacro) setTimeout(() => toast('📲 Notificación enviada a toda la brigada', 'success'), 800);
+  guardarEnStorage();
+}
+
+function actualizarCronometro() {
+  if (!incidenteActivo) return;
+  const t = Math.floor((Date.now() - incidenteActivo.inicio) / 1000);
+  const h = String(Math.floor(t / 3600)).padStart(2, '0');
+  const m = String(Math.floor((t % 3600) / 60)).padStart(2, '0');
+  const s = String(t % 60).padStart(2, '0');
+  document.getElementById('cronometro').textContent = `${h}:${m}:${s}`;
+}
+
+function finalizarIncidente() {
+  if (!incidenteActivo) return;
+  const duracion = Math.floor((Date.now() - incidenteActivo.inicio) / 1000);
+  historial.unshift({ ...incidenteActivo, fin: Date.now(), duracion, cerradoPor: sesionActual });
+  incidenteActivo = null;
+  clearInterval(cronometroInterval); cronometroInterval = null;
+  document.getElementById('cronometro').textContent = '00:00:00';
+  document.getElementById('cronometro').classList.add('inactivo');
+  document.getElementById('btnNuevoIncidente').style.display = 'inline-block';
+  document.getElementById('btnFinalizarIncidente').style.display = 'none';
+  document.getElementById('estadoSistema').className = 'status-pill';
+  document.getElementById('estadoSistema').textContent = '✓ Sistema operativo';
+  document.getElementById('alertaActiva').innerHTML = '';
+  document.getElementById('infoIncidente').innerHTML = '<div class="empty">No hay incidente activo</div>';
+  document.getElementById('protocolosRecomendados').innerHTML = '<div class="empty">Seleccione un tipo de incidente para ver los protocolos</div>';
+  renderMapa(); renderHistorial();
+  toast('✓ Incidente finalizado y archivado', 'success');
+  guardarEnStorage();
+}
+
+/* ============================================================
+   SOS
+============================================================ */
+function iniciarSOS() { sosPresionado = true; sosTimer = setTimeout(() => { if (sosPresionado) { declararEmergenciaRapida(); sosPresionado = false; } }, 1500); }
+function cancelarSOS() { if (sosTimer) { clearTimeout(sosTimer); sosTimer = null; } sosPresionado = false; }
+function toggleSOSMenu(e) { e.stopPropagation(); if (sosPresionado) return; document.getElementById('sosMenu').classList.toggle('show'); }
+function llamar911() {
+  document.getElementById('sosMenu').classList.remove('show');
+  toast('📞 Llamando al ECU-911...', 'error');
+  setTimeout(() => { if (confirm('¿Confirmar llamada al ECU-911?')) window.location.href = 'tel:911'; }, 300);
+}
+function declararEmergenciaRapida() {
+  document.getElementById('sosMenu').classList.remove('show');
+  if (incidenteActivo) { toast('⚠ Ya hay un incidente activo', 'error'); return; }
+  if (confirm('🚨 ¿Declarar EMERGENCIA de brigada ahora?')) {
+    incidenteActivo = { id: Date.now(), categoria: 'accidente', ubicacion: 'Emergencia declarada por SOS', descripcion: 'Botón SOS presionado', inicio: Date.now(), x: 500, y: 350, simulacro: false };
+    document.getElementById('cronometro').classList.remove('inactivo');
+    document.getElementById('btnNuevoIncidente').style.display = 'none';
+    document.getElementById('btnFinalizarIncidente').style.display = 'inline-block';
+    document.getElementById('estadoSistema').className = 'status-pill alert';
+    document.getElementById('estadoSistema').textContent = '🚨 EMERGENCIA ACTIVA';
+    cronometroInterval = setInterval(actualizarCronometro, 1000);
+    actualizarCronometro();
+    document.getElementById('alertaActiva').innerHTML = `<div class="alert-banner"><div><strong>🚨 EMERGENCIA SOS ACTIVA</strong><div style="font-size:0.85em;margin-top:4px;">Todos los brigadistas notificados.</div></div></div>`;
+    document.getElementById('infoIncidente').innerHTML = `<div class="persona-item"><strong>Categoría:</strong> Emergencia SOS</div><div class="persona-item"><strong>Inicio:</strong> ${new Date(incidenteActivo.inicio).toLocaleString()}</div>`;
+    renderMapa();
+    toast('🚨 EMERGENCIA DECLARADA', 'error');
+    setTimeout(() => toast('📲 Notificación push enviada a 10 brigadistas', 'success'), 1000);
+    guardarEnStorage();
+  }
+}
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.sos-btn') && !e.target.closest('.sos-menu')) document.getElementById('sosMenu').classList.remove('show');
+});
+
+/* ============================================================
+   RENDER PROTOCOLOS / PRIMEROS / NORMAS
+============================================================ */
+function renderProtocolos() {
+  const cont = document.getElementById('listaProtocolos');
+  cont.innerHTML = PROTOCOLOS.map((p, idx) => `
+    <div class="protocolo">
+      <div class="protocolo-header" onclick="toggleProtocolo(this)">
+        <span>${p.titulo}</span><span>▼</span>
+      </div>
+      <div class="protocolo-body">
+        ${p.pasos.map(paso => `<div class="paso ${paso.urgente ? 'urgente' : ''}"><div class="paso-num">${paso.n}</div><div>${paso.txt}</div></div>`).join('')}
+        <button class="btn-voz" onclick="entrarManosLibres('protocolo', ${idx})">
+          <span class="icon">🎙️</span> Modo Manos Libres
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderPrimerosAuxilios() {
+  const cont = document.getElementById('listaPrimeros');
+  cont.innerHTML = PRIMEROS_AUXILIOS.map((p, idx) => `
+    <div class="protocolo">
+      <div class="protocolo-header" onclick="toggleProtocolo(this)">
+        <span>${p.titulo}</span>
+        <span style="display:flex;align-items:center;gap:8px;">
+          <span class="voice-badge">🎙️ Manos Libres</span>
+          ${p.videos && p.videos.length > 0 ? `<span class="video-badge">🎥 ${p.videos.length}</span>` : ''}
+          ▼
+        </span>
+      </div>
+      <div class="protocolo-body">
+        ${p.pasos.map(paso => `<div class="paso ${paso.urgente ? 'urgente' : ''}"><div class="paso-num">${paso.n}</div><div>${paso.txt}</div></div>`).join('')}
+        <button class="btn-voz" onclick="entrarManosLibres('primeros', ${idx})">
+          <span class="icon">🎙️</span> Iniciar Modo Manos Libres
+        </button>
+        ${p.videos && p.videos.length > 0 ? `
+          <div style="margin-top:16px;">
+            <div style="font-size:0.8em;color:var(--accent);font-weight:700;margin-bottom:8px;">🎥 VIDEOS TUTORIALES</div>
+            ${p.videos.map((v, i) => `
+              <div class="video-card" onclick="abrirVideo('${p.id}', ${i})">
+                <div class="video-thumb">
+                  <img src="https://img.youtube.com/vi/${v.id}/hqdefault.jpg" alt="${v.titulo}" loading="lazy">
+                  <div class="play-overlay"><div class="play-btn">▶</div></div>
+                </div>
+                <div class="video-info">
+                  <div><div class="titulo">${v.titulo}</div><div style="font-size:0.72em;color:var(--text-dim);margin-top:2px;">📺 ${v.canal}</div></div>
+                  <div class="duracion">⏱ ${v.duracion}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderNormas() {
+  const cont = document.getElementById('listaNormas');
+  cont.innerHTML = NORMAS.map(n => `<div class="card"><h3>${n.titulo}</h3><p style="font-size:0.87em;color:var(--text-dim);">${n.detalle}</p></div>`).join('');
+}
+
+function toggleProtocolo(el) { el.parentElement.classList.toggle('open'); }
+
+/* ============================================================
+   VIDEO MODAL (con soporte para Shorts)
+============================================================ */
+function abrirVideo(protocoloId, videoIndex) {
+  const prot = PRIMEROS_AUXILIOS.find(p => p.id === protocoloId);
+  if (!prot || !prot.videos || !prot.videos[videoIndex]) return;
+  const v = prot.videos[videoIndex];
+  videoActual = v;
+
+  const esShort = v.esShort || (v.duracion || '').toLowerCase().includes('short');
+
+  document.getElementById('videoModalTitle').textContent = `🎥 ${v.titulo}`;
+  document.getElementById('videoModalBody').innerHTML = `
+    <iframe
+      src="https://www.youtube.com/embed/${v.id}?autoplay=1&rel=0&modestbranding=1"
+      title="${v.titulo}"
+      style="${esShort ? 'max-width:400px;margin:0 auto;display:block;' : ''}"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowfullscreen>
+    </iframe>
+  `;
+  document.getElementById('videoModalNota').innerHTML = `
+    <strong>📺 ${v.canal || 'Video tutorial'}</strong> · ${v.nota || ''}
+    <br><span style="color:var(--warning);">⚠ Material de apoyo. No sustituye capacitación certificada.</span>
+  `;
+  document.getElementById('videoModal').classList.add('show');
+}
+
+function cerrarVideo() {
+  document.getElementById('videoModal').classList.remove('show');
+  document.getElementById('videoModalBody').innerHTML = '';
+  videoActual = null;
+}
+
+function abrirEnYouTube() { if (videoActual) window.open(`https://www.youtube.com/watch?v=${videoActual.id}`, '_blank'); }
+document.getElementById('videoModal').addEventListener('click', (e) => { if (e.target.id === 'videoModal') cerrarVideo(); });
+
+/* ============================================================
+   🎙️ MODO MANOS LIBRES
+============================================================ */
+function entrarManosLibres(tipo, indice) {
+  let protocolo;
+  if (tipo === 'primeros') protocolo = PRIMEROS_AUXILIOS[indice];
+  else protocolo = PROTOCOLOS[indice];
+
+  if (!protocolo) return;
+
+  ML.activo = true;
+  ML.protocolo = protocolo;
+  ML.pasoActual = 0;
+  ML.metronomoActivo = false;
+
+  document.getElementById('mlTitulo').textContent = protocolo.titulo;
+  document.getElementById('manosLibresOverlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+
+  renderPasoManosLibres();
+  iniciarReconocimientoVoz();
+
+  setTimeout(() => {
+    hablar(`Modo manos libres activado. ${protocolo.titulo}. Hay ${protocolo.pasos.length} pasos. Di siguiente para avanzar, repetir para escuchar de nuevo, o salir para terminar.`);
+  }, 600);
+}
+
+function salirManosLibres() {
+  ML.activo = false;
+  detenerMetronomo();
+  detenerReconocimientoVoz();
+  window.speechSynthesis.cancel();
+  document.getElementById('manosLibresOverlay').classList.remove('show');
+  document.body.style.overflow = '';
+  toast('Modo Manos Libres desactivado', 'success');
+}
+
+function renderPasoManosLibres() {
+  const body = document.getElementById('mlBody');
+  const p = ML.protocolo;
+  const paso = p.pasos[ML.pasoActual];
+  const total = p.pasos.length;
+  const esRCP = p.id === 'rcp' || p.id === 'hemorragia' || p.titulo.toLowerCase().includes('rcp');
+
+  document.getElementById('mlProgress').textContent = `Paso ${ML.pasoActual + 1} / ${total}`;
+
+  if (ML.pasoActual >= total) {
+    detenerMetronomo();
+    body.innerHTML = `
+      <div class="ml-finalizado">
+        <div class="check-grande">✅</div>
+        <h2>¡Protocolo completado!</h2>
+        <p>Has terminado los ${total} pasos de <strong>${p.titulo}</strong>.</p>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:20px;">
+          <button class="ml-btn-control" onclick="reiniciarManosLibres()">
+            <span class="emoji">🔁</span> Reiniciar protocolo
+          </button>
+          <button class="ml-btn-control primary" onclick="salirManosLibres()">
+            <span class="emoji">✓</span> Finalizar
+          </button>
+        </div>
+        <p style="margin-top:30px;font-size:0.85em;color:rgba(255,255,255,0.5);">
+          📞 Si la emergencia continúa, llama al ECU-911
+        </p>
+      </div>
+    `;
+    hablar('Protocolo completado. Excelente trabajo. Si la emergencia continúa, llama al 911.');
+    return;
+  }
+
+  body.innerHTML = `
+    <div class="ml-paso-actual ${paso.urgente ? 'urgente' : ''}">
+      <div class="ml-num">${paso.n}</div>
+      <div class="ml-texto">${paso.txt}</div>
+      ${paso.urgente ? '<div style="margin-top:12px;color:var(--emergencia);font-weight:700;font-size:0.9em;">⚠ PASO CRÍTICO</div>' : ''}
+    </div>
+
+    ${esRCP && ML.pasoActual >= 4 ? `
+      <div class="ml-metronomo">
+        <div class="bpm-lbl">TEMPORIZADOR DE COMPRESIONES</div>
+        <div class="bpm-display" id="mlBpm">${ML.bpm}</div>
+        <div class="bpm-lbl">BPM — Ritmo recomendado AHA</div>
+        <div class="ml-pulso" id="mlPulso"></div>
+        <div class="ml-metronomo-btns">
+          <button class="btn ${ML.metronomoActivo ? 'btn-danger' : 'btn-success'}" onclick="toggleMetronomo()">
+            ${ML.metronomoActivo ? '⏸ Detener metrónomo' : '▶ Iniciar metrónomo'}
+          </button>
+          <button class="btn btn-ghost" onclick="cambiarBPM(-10)">−10 BPM</button>
+          <button class="btn btn-ghost" onclick="cambiarBPM(10)">+10 BPM</button>
+        </div>
+        <div style="margin-top:10px;font-size:0.75em;color:rgba(255,255,255,0.5);">
+          Marca el ritmo de compresiones torácicas. 100-120 BPM es el estándar.
+        </div>
+      </div>
+    ` : ''}
+
+    <div class="ml-controles">
+      <button class="ml-btn-control" onclick="pasoAnterior()">
+        <span class="emoji">⏮️</span> Anterior
+      </button>
+      <button class="ml-btn-control primary" onclick="pasoSiguiente()">
+        <span class="emoji">⏭️</span> Siguiente
+      </button>
+      <button class="ml-btn-control" onclick="repetirPaso()">
+        <span class="emoji">🔁</span> Repetir
+      </button>
+      <button class="ml-btn-control danger" onclick="salirManosLibres()">
+        <span class="emoji">✕</span> Salir
+      </button>
+    </div>
+
+    <div class="ml-comandos">
+      <h4>🎤 Comandos de voz disponibles</h4>
+      <div class="ml-comandos-lista">
+        <span class="ml-comando-chip"><strong>"siguiente"</strong> avanzar</span>
+        <span class="ml-comando-chip"><strong>"atrás"</strong> retroceder</span>
+        <span class="ml-comando-chip"><strong>"repetir"</strong> escuchar de nuevo</span>
+        <span class="ml-comando-chip"><strong>"metrónomo"</strong> activar/desactivar</span>
+        <span class="ml-comando-chip"><strong>"salir"</strong> terminar</span>
+      </div>
+    </div>
+
+    <div class="ml-mic-status" id="mlMicStatus">
+      <div class="ml-mic-dot ${ML.escuchando ? '' : 'inactivo'}"></div>
+      <span>${ML.escuchando ? '🎤 Escuchando comandos...' : '🔇 Micrófono inactivo'}</span>
+    </div>
+  `;
+}
+
+function pasoSiguiente() {
+  if (ML.pasoActual < ML.protocolo.pasos.length) {
+    ML.pasoActual++;
+    renderPasoManosLibres();
+    if (ML.pasoActual < ML.protocolo.pasos.length) {
+      setTimeout(() => hablarPasoActual(), 300);
+    }
+  }
+}
+
+function pasoAnterior() {
+  if (ML.pasoActual > 0) {
+    ML.pasoActual--;
+    renderPasoManosLibres();
+    setTimeout(() => hablarPasoActual(), 300);
+  }
+}
+
+function repetirPaso() {
+  hablarPasoActual();
+  toast('🔁 Repitiendo paso', 'success');
+}
+
+function reiniciarManosLibres() {
+  ML.pasoActual = 0;
+  detenerMetronomo();
+  renderPasoManosLibres();
+  setTimeout(() => hablarPasoActual(), 300);
+}
+
+function hablarPasoActual() {
+  if (ML.pasoActual >= ML.protocolo.pasos.length) return;
+  const paso = ML.protocolo.pasos[ML.pasoActual];
+  const total = ML.protocolo.pasos.length;
+  const prefijo = paso.urgente ? 'Atención, paso crítico. ' : '';
+  const texto = `${prefijo}Paso ${ML.pasoActual + 1} de ${total}. ${paso.txt}`;
+  hablar(texto);
+}
+
+/* ============================================================
+   METRÓNOMO RCP
+============================================================ */
+function toggleMetronomo() {
+  if (ML.metronomoActivo) detenerMetronomo();
+  else iniciarMetronomo();
+  renderPasoManosLibres();
+}
+
+function iniciarMetronomo() {
+  ML.metronomoActivo = true;
+  const intervalo = (60 / ML.bpm) * 1000;
+  ML.metronomoInterval = setInterval(() => {
+    const pulso = document.getElementById('mlPulso');
+    if (pulso) {
+      pulso.classList.add('beat');
+      setTimeout(() => pulso.classList.remove('beat'), 100);
+    }
+  }, intervalo);
+  toast(`▶ Metrónomo a ${ML.bpm} BPM`, 'success');
+}
+
+function detenerMetronomo() {
+  ML.metronomoActivo = false;
+  if (ML.metronomoInterval) { clearInterval(ML.metronomoInterval); ML.metronomoInterval = null; }
+}
+
+function cambiarBPM(delta) {
+  ML.bpm = Math.max(60, Math.min(140, ML.bpm + delta));
+  const display = document.getElementById('mlBpm');
+  if (display) display.textContent = ML.bpm;
+  if (ML.metronomoActivo) {
+    detenerMetronomo();
+    iniciarMetronomo();
+  }
+  toast(`BPM ajustado a ${ML.bpm}`, 'success');
+}
+
+/* ============================================================
+   VOZ — SÍNTESIS Y RECONOCIMIENTO
+============================================================ */
+function seleccionarVozEspanol() {
+  if (!('speechSynthesis' in window)) return;
+  const voces = window.speechSynthesis.getVoices();
+  const esVoz = voces.find(v => v.lang === 'es-MX') ||
+                voces.find(v => v.lang === 'es-US') ||
+                voces.find(v => v.lang === 'es-ES') ||
+                voces.find(v => v.lang.startsWith('es'));
+  ML.vozSeleccionada = esVoz || null;
+}
+
+if ('speechSynthesis' in window) {
+  window.speechSynthesis.onvoiceschanged = seleccionarVozEspanol;
+}
+
+function hablar(texto) {
+  if (!('speechSynthesis' in window)) {
+    console.warn('SpeechSynthesis no soportado');
+    return;
+  }
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(texto);
+  utter.lang = 'es-MX';
+  utter.rate = 0.95;
+  utter.pitch = 1;
+  utter.volume = 1;
+  if (ML.vozSeleccionada) utter.voice = ML.vozSeleccionada;
+
+  utter.onstart = () => { mostrarSubtituloVoz(texto); };
+  utter.onend = () => {
+    ocultarSubtituloVoz();
+    if (ML.activo && !ML.escuchando) {
+      setTimeout(() => iniciarReconocimientoVoz(), 300);
+    }
+  };
+  window.speechSynthesis.speak(utter);
+}
+
+function mostrarSubtituloVoz(texto) {
+  const sub = document.getElementById('mlSubtitle');
+  const text = document.getElementById('mlSubtitleText');
+  if (sub && text) {
+    text.textContent = texto;
+    sub.classList.add('show');
+  }
+}
+
+function ocultarSubtituloVoz() {
+  const sub = document.getElementById('mlSubtitle');
+  if (sub) sub.classList.remove('show');
+}
+
+function iniciarReconocimientoVoz() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    console.warn('SpeechRecognition no soportado en este navegador');
+    actualizarEstadoMic(false);
+    return;
+  }
+
+  try {
+    if (ML.reconocimiento) {
+      ML.reconocimiento.abort();
+    }
+    const rec = new SpeechRecognition();
+    rec.lang = 'es-MX';
+    rec.continuous = true;
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
+
+    rec.onstart = () => {
+      ML.escuchando = true;
+      actualizarEstadoMic(true);
+    };
+
+    rec.onresult = (event) => {
+      const ultimo = event.results[event.results.length - 1];
+      if (!ultimo.isFinal) return;
+      const texto = ultimo[0].transcript.toLowerCase().trim();
+      console.log('🎤 Comando detectado:', texto);
+      procesarComandoVoz(texto);
+    };
+
+    rec.onerror = (e) => {
+      console.warn('Error de reconocimiento:', e.error);
+      if (e.error === 'not-allowed') {
+        actualizarEstadoMic(false);
+        toast('⚠ Permiso de micrófono denegado', 'error');
+      }
+    };
+
+    rec.onend = () => {
+      ML.escuchando = false;
+      actualizarEstadoMic(false);
+      if (ML.activo) {
+        setTimeout(() => {
+          if (ML.activo && !window.speechSynthesis.speaking) {
+            try { rec.start(); } catch (e) {}
+          }
+        }, 500);
+      }
+    };
+
+    ML.reconocimiento = rec;
+    rec.start();
+  } catch (e) {
+    console.warn('Error al iniciar reconocimiento:', e);
+  }
+}
+
+function detenerReconocimientoVoz() {
+  if (ML.reconocimiento) {
+    try { ML.reconocimiento.abort(); } catch (e) {}
+    ML.reconocimiento = null;
+  }
+  ML.escuchando = false;
+  actualizarEstadoMic(false);
+}
+
+function actualizarEstadoMic(activo) {
+  const status = document.getElementById('mlMicStatus');
+  if (!status) return;
+  status.innerHTML = `
+    <div class="ml-mic-dot ${activo ? '' : 'inactivo'}"></div>
+    <span>${activo ? '🎤 Escuchando comandos...' : '🔇 Micrófono inactivo'}</span>
+  `;
+}
+
+function procesarComandoVoz(texto) {
+  const t = texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[.,!?]/g, '').trim();
+
+  const comandos = {
+    siguiente: ['siguiente', 'continuar', 'avanza', 'avanzar', 'proximo', 'proxima', 'adelante', 'ok', 'listo'],
+    anterior: ['anterior', 'atras', 'regresa', 'volver', 'retrocede', 'retroceder'],
+    repetir: ['repetir', 'repite', 'otra vez', 'de nuevo', 'escuchar de nuevo', 'que dijiste'],
+    metronomo: ['metronomo', 'ritmo', 'pulso', 'compresiones', 'empezar compresiones', 'iniciar compresiones'],
+    salir: ['salir', 'terminar', 'cerrar', 'detener', 'parar', 'fin', 'finalizar', 'basta']
+  };
+
+  for (const [accion, palabras] of Object.entries(comandos)) {
+    if (palabras.some(p => t.includes(p))) {
+      ejecutarComando(accion);
+      return;
+    }
+  }
+}
+
+function ejecutarComando(accion) {
+  mostrarSubtituloVoz(`🎤 Comando: "${accion}"`);
+  setTimeout(() => ocultarSubtituloVoz(), 1200);
+
+  switch (accion) {
+    case 'siguiente': pasoSiguiente(); break;
+    case 'anterior': pasoAnterior(); break;
+    case 'repetir': repetirPaso(); break;
+    case 'metronomo': toggleMetronomo(); break;
+    case 'salir':
+      hablar('Saliendo del modo manos libres.');
+      setTimeout(() => salirManosLibres(), 1500);
+      break;
+  }
+}
+
+/* ============================================================
+   MIEMBROS / HISTORIAL
+============================================================ */
+function renderMiembros() {
+  const cont = document.getElementById('listaMiembros');
+  if (miembros.length === 0) { cont.innerHTML = '<div class="empty">No hay miembros registrados</div>'; return; }
+  cont.innerHTML = miembros.map(m => `
+    <div class="persona-item" style="${!m.activo ? 'opacity:0.5;' : ''}">
+      <div class="persona-info">
+        <span class="badge-rol ${m.rol}">${ROLES[m.rol].icon} ${ROLES[m.rol].nombre}</span>
+        <strong>${m.nombre}</strong>
+        ${!m.activo ? '<span style="color:var(--text-dim);font-size:0.8em;">(inactivo)</span>' : ''}
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-ghost btn-sm" onclick="abrirModalMiembro(${m.id})">✏ Editar</button>
+        <button class="btn btn-ghost btn-sm" onclick="toggleActivoMiembro(${m.id})">${m.activo ? '🚫 Inactivar' : '✓ Activar'}</button>
+        <button class="btn btn-danger btn-sm" onclick="eliminarMiembro(${m.id})">🗑</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function abrirModalMiembro(id = null) {
+  const m = id ? miembros.find(x => x.id === id) : null;
+  const modal = document.getElementById('modalContent');
+  modal.innerHTML = `
+    <h2>${m ? '✏ Editar miembro' : '➕ Nuevo miembro'}</h2>
+    <div class="form-row"><label>Nombre completo</label><input id="mNombre" value="${m ? m.nombre : ''}" placeholder="Ej: Juan Pérez" /></div>
+    <div class="form-row"><label>Rol</label>
+      <select id="mRol">
+        <option value="emergencia" ${m && m.rol === 'emergencia' ? 'selected' : ''}>🚑 Emergencias</option>
+        <option value="rescatista" ${m && m.rol === 'rescatista' ? 'selected' : ''}>🧗 Rescatista</option>
+        <option value="incendios" ${m && m.rol === 'incendios' ? 'selected' : ''}>🔥 Anti-incendios</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarMiembro(${id || 'null'})">💾 Guardar</button>
+    </div>
+  `;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+function guardarMiembro(id) {
+  const nombre = document.getElementById('mNombre').value.trim();
+  const rol = document.getElementById('mRol').value;
+  if (!nombre) { toast('Ingrese un nombre', 'error'); return; }
+  if (id) {
+    const m = miembros.find(x => x.id === id);
+    m.nombre = nombre; m.rol = rol;
+    m.iniciales = nombre.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+  } else {
+    const nuevoId = Math.max(...miembros.map(m => m.id), 0) + 1;
+    miembros.push({ id: nuevoId, nombre, rol, estado: 'alrededores', x: 100 + Math.random() * 800, y: 100 + Math.random() * 600, iniciales: nombre.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase(), activo: true });
+  }
+  cerrarModal(); renderMiembros(); renderPersonal(); renderMapa(); actualizarEstados();
+  toast('✓ Miembro guardado', 'success');
+  guardarEnStorage();
+}
+
+function toggleActivoMiembro(id) {
+  const m = miembros.find(x => x.id === id);
+  m.activo = !m.activo;
+  renderMiembros(); renderPersonal(); renderMapa(); actualizarEstados();
+  toast(`Miembro ${m.activo ? 'activado' : 'inactivado'}`, 'success');
+  guardarEnStorage();
+}
+
+function eliminarMiembro(id) {
+  if (!confirm('¿Eliminar este miembro?')) return;
+  miembros = miembros.filter(m => m.id !== id);
+  renderMiembros(); renderPersonal(); renderMapa(); actualizarEstados();
+  toast('Miembro eliminado', 'error');
+  guardarEnStorage();
+}
+
+function renderHistorial() {
+  const cont = document.getElementById('listaHistorial');
+  if (sesionActual !== 'coordinador') { cont.innerHTML = '<div class="empty">🔒 Requiere sesión de Coordinador</div>'; return; }
+  if (historial.length === 0) { cont.innerHTML = '<div class="empty">No hay incidentes registrados</div>'; return; }
+  cont.innerHTML = historial.map(h => {
+    const dur = h.duracion || 0;
+    const hh = String(Math.floor(dur / 3600)).padStart(2, '0');
+    const mm = String(Math.floor((dur % 3600) / 60)).padStart(2, '0');
+    const ss = String(dur % 60).padStart(2, '0');
+    return `<div class="hist-item" style="${h.simulacro ? 'border-color:var(--warning);' : ''}">
+      <div class="flex-between"><strong>${h.simulacro ? '🧪' : '🚨'} ${h.categoria.toUpperCase()}</strong><span class="fecha">${new Date(h.inicio).toLocaleString()}</span></div>
+      <div style="margin-top:6px;">📍 ${h.ubicacion}</div>
+      <div style="margin-top:4px;color:var(--text-dim);">${h.descripcion}</div>
+      <div style="margin-top:6px;font-size:0.85em;">⏱ Duración: ${hh}:${mm}:${ss} · Cerrado por: ${h.cerradoPor || 'N/A'}</div>
+    </div>`;
+  }).join('');
+}
+
+function exportarHistorial() {
+  if (sesionActual !== 'coordinador') { toast('🔒 Solo el Coordinador puede exportar', 'error'); return; }
+  const data = JSON.stringify(historial, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `historial_brigada_${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('✓ Historial exportado', 'success');
+}
+
+/* ============================================================
+   TOUR + FAQ
+============================================================ */
+function renderTour() {
+  const cont = document.getElementById('tourPasos');
+  cont.innerHTML = TOUR_PASOS.map((p, i) => `
+    <div class="paso-demo" id="tour-${p.id}" data-paso="${p.id}">
+      <div class="paso-demo-num">${i + 1}</div>
+      <div class="paso-demo-content">
+        <h4>${p.titulo}</h4>
+        <p>${p.descripcion}</p>
+        <button class="btn btn-primary btn-sm accion-btn" onclick="accionTour('${p.id}')">${p.accion} →</button>
+        <button class="btn btn-ghost btn-sm accion-btn" onclick="marcarPaso('${p.id}')">✓ Marcar completado</button>
+      </div>
+    </div>
+  `).join('');
+  actualizarProgreso();
+}
+
+function accionTour(pasoId) {
+  const paso = TOUR_PASOS.find(p => p.id === pasoId);
+  if (!paso) return;
+  if (paso.id === 'paso6') { document.getElementById('sosMenu').classList.add('show'); toast('👆 Menú SOS abierto', 'success'); }
+  else if (paso.id === 'paso7') { irATab('primeros'); toast('🎥 Pulsa cualquier video', 'success'); }
+  else if (paso.id === 'paso8') { irATab('primeros'); toast('🎙️ Expande un protocolo y pulsa Modo Manos Libres', 'success'); }
+  else if (paso.irA) { irATab(paso.irA); toast(`→ ${paso.irA}`, 'success'); }
+  marcarPaso(pasoId);
+}
+
+function marcarPaso(pasoId) {
+  const el = document.getElementById('tour-' + pasoId);
+  if (!el) return;
+  el.classList.add('completado');
+  guardarProgresoTour(); actualizarProgreso();
+}
+
+function actualizarProgreso() {
+  const total = TOUR_PASOS.length;
+  const completados = document.querySelectorAll('.paso-demo.completado').length;
+  document.getElementById('progressFill').style.width = Math.round((completados / total) * 100) + '%';
+  document.getElementById('progressText').textContent = `${completados} / ${total}`;
+  if (completados === total) setTimeout(() => toast('🎉 ¡Tour completado!', 'success'), 500);
+}
+
+function guardarProgresoTour() {
+  try { localStorage.setItem('brigada_tour_progreso', JSON.stringify(Array.from(document.querySelectorAll('.paso-demo.completado')).map(el => el.dataset.paso))); } catch (e) {}
+}
+
+function cargarProgresoTour() {
+  try {
+    const guardados = JSON.parse(localStorage.getItem('brigada_tour_progreso') || '[]');
+    guardados.forEach(id => { const el = document.getElementById('tour-' + id); if (el) el.classList.add('completado'); });
+    actualizarProgreso();
+  } catch (e) {}
+}
+
+function resetTour() {
+  if (!confirm('¿Reiniciar el progreso del tour?')) return;
+  document.querySelectorAll('.paso-demo.completado').forEach(el => el.classList.remove('completado'));
+  try { localStorage.removeItem('brigada_tour_progreso'); } catch (e) {}
+  actualizarProgreso();
+  toast('↺ Tour reiniciado', 'success');
+}
+
+function iniciarTour() {
+  irAAyuda();
+  document.getElementById('tourPasos').scrollIntoView({ behavior: 'smooth' });
+  toast('▶ Tour iniciado', 'success');
+}
+
+function renderFAQ() {
+  const cont = document.getElementById('faqLista');
+  cont.innerHTML = FAQ_ITEMS.map((f, i) => `
+    <div class="faq-item" id="faq-${i}">
+      <div class="faq-pregunta" onclick="toggleFAQ(${i})"><span>${f.p}</span><span>▼</span></div>
+      <div class="faq-respuesta">${f.r}</div>
+    </div>
+  `).join('');
+}
+
+function toggleFAQ(i) { document.getElementById('faq-' + i).classList.toggle('open'); }
+
+/* ============================================================
+   PERSISTENCIA
+============================================================ */
+function guardarEnStorage() {
+  try {
+    localStorage.setItem('brigada_miembros', JSON.stringify(miembros));
+    localStorage.setItem('brigada_historial', JSON.stringify(historial));
+    localStorage.setItem('brigada_incidente', JSON.stringify(incidenteActivo));
+  } catch (e) {}
+}
+
+function cargarDeStorage() {
+  try {
+    const m = localStorage.getItem('brigada_miembros');
+    const h = localStorage.getItem('brigada_historial');
+    const i = localStorage.getItem('brigada_incidente');
+    if (m) miembros = JSON.parse(m);
+    if (h) historial = JSON.parse(h);
+    if (i && JSON.parse(i)) {
+      incidenteActivo = JSON.parse(i);
+      document.getElementById('cronometro').classList.remove('inactivo');
+      document.getElementById('btnNuevoIncidente').style.display = 'none';
+      document.getElementById('btnFinalizarIncidente').style.display = 'inline-block';
+      document.getElementById('estadoSistema').className = 'status-pill alert';
+      document.getElementById('estadoSistema').textContent = incidenteActivo.simulacro ? '🧪 SIMULACRO ACTIVO' : '🚨 EMERGENCIA ACTIVA';
+      cronometroInterval = setInterval(actualizarCronometro, 1000);
+      actualizarCronometro();
+    }
+    renderMiembros(); renderPersonal(); renderMapa(); actualizarEstados(); renderHistorial();
+  } catch (e) {}
+}
+
+/* ============================================================
+   UTILIDADES
+============================================================ */
+function cerrarModal() { document.getElementById('modalOverlay').classList.remove('show'); }
+document.getElementById('modalOverlay').addEventListener('click', (e) => { if (e.target.id === 'modalOverlay') cerrarModal(); });
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (ML.activo) { salirManosLibres(); return; }
+    cerrarModal();
+    cerrarVideo();
+    document.getElementById('sosMenu').classList.remove('show');
+  }
+  if (ML.activo) {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); pasoSiguiente(); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); pasoAnterior(); }
+    if (e.key === 'r' || e.key === 'R') { e.preventDefault(); repetirPaso(); }
+    if (e.key === 'm' || e.key === 'M') { e.preventDefault(); toggleMetronomo(); }
+  }
+});
+
+function toast(msg, tipo = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + tipo;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.className = 'toast ' + tipo; }, 3000);
+}
+</script>
+
+</body>
+</html>

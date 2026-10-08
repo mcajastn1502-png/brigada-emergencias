@@ -1,16 +1,53 @@
+/**
+ * Marker de punto de encuentro — SVG nativo (escala con el zoom)
+ * @param {{ punto: { id: string, nombre: string, x: number, y: number } }} props
+ */
 export default function MarkerPuntoEncuentro({ punto }) {
   return (
-    <div
-      className="absolute z-20"
-      style={{ left: `${punto.x}px`, top: `${punto.y}px`, transform: 'translate(-50%, -50%)' }}
-      title={punto.nombre}
-    >
-      <div className="w-[32px] h-[32px] rounded-full bg-amber-500 border-[3px] border-white shadow-[0_0_15px_rgba(245,158,11,0.6)] flex items-center justify-center text-white text-base">
+    <g style={{ pointerEvents: 'auto' }}>
+      <title>{punto.nombre}</title>
+
+      {/* Halo pulsante */}
+      <circle cx={punto.x} cy={punto.y} r="26" fill="#eab308" opacity="0.3">
+        <animate attributeName="r" values="22;30;22" dur="1.8s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0.4;0.1;0.4" dur="1.8s" repeatCount="indefinite" />
+      </circle>
+
+      {/* Círculo principal */}
+      <circle cx={punto.x} cy={punto.y} r="16" fill="#eab308" stroke="white" strokeWidth="2.5" />
+      <text
+        x={punto.x}
+        y={punto.y + 6}
+        fill="white"
+        fontSize="16"
+        textAnchor="middle"
+        style={{ pointerEvents: 'none', userSelect: 'none' }}
+      >
         📍
-      </div>
-      <div className="absolute top-[34px] left-1/2 -translate-x-1/2 bg-black/85 text-white px-2 py-0.5 rounded text-[11px] whitespace-nowrap border border-[#2d3748] pointer-events-none">
+      </text>
+
+      {/* Etiqueta */}
+      <rect
+        x={punto.x - 30}
+        y={punto.y + 20}
+        width="60"
+        height="14"
+        rx="3"
+        fill="rgba(0,0,0,0.85)"
+        stroke="#eab308"
+        strokeWidth="0.5"
+      />
+      <text
+        x={punto.x}
+        y={punto.y + 30}
+        fill="#fef3c7"
+        fontSize="9"
+        fontWeight="700"
+        textAnchor="middle"
+        style={{ pointerEvents: 'none', userSelect: 'none' }}
+      >
         {punto.id}
-      </div>
-    </div>
+      </text>
+    </g>
   );
 }

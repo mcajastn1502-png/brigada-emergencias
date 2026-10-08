@@ -5,7 +5,11 @@ import Leyenda from '@/components/mapa/Leyenda';
 
 export default function MapaPage() {
   const { miembros, loading, toggleEstado } = useMiembros();
-  const [zoom, setZoom] = useState(0.65); // 65% por defecto para ver casi todo
+  const [zoom, setZoom] = useState(0.65);
+
+  const cambiarZoom = (delta) => {
+    setZoom((z) => Math.max(0.3, Math.min(z + delta, 2)));
+  };
 
   if (loading) {
     return (
@@ -14,21 +18,31 @@ export default function MapaPage() {
   }
 
   return (
-    <div className="relative w-full h-full bg-[#1e2530] overflow-auto">
-      {/* Contenedor escalable */}
-      <div className="min-h-full flex justify-center p-4">
+    <div className="relative w-full h-full bg-[#1e2530] overflow-hidden">
+      {/* Contenedor con scroll */}
+      <div className="w-full h-full overflow-auto p-4">
         <div
           style={{
-            transform: `scale(${zoom})`,
-            transformOrigin: 'top center',
-            transition: 'transform 0.2s',
+            width: `${1500 * zoom}px`,
+            height: `${1000 * zoom}px`,
+            transition: 'width 0.2s, height 0.2s',
+            margin: '0 auto',
           }}
         >
-          <MapaBodega miembros={miembros} onToggleEstado={toggleEstado} />
+          <div
+            style={{
+              transform: `scale(${zoom})`,
+              transformOrigin: 'top left',
+              width: '1500px',
+              height: '1000px',
+            }}
+          >
+            <MapaBodega miembros={miembros} onToggleEstado={toggleEstado} />
+          </div>
         </div>
       </div>
 
-      {/* Leyenda flotante */}
+      {/* Leyenda */}
       <div className="fixed bottom-4 left-4 z-50">
         <Leyenda />
       </div>
@@ -36,14 +50,14 @@ export default function MapaPage() {
       {/* Controles de zoom */}
       <div className="fixed top-32 right-4 z-50 flex flex-col gap-2">
         <button
-          onClick={() => setZoom((z) => Math.min(z + 0.1, 1.5))}
+          onClick={() => cambiarZoom(0.1)}
           className="w-10 h-10 rounded-lg bg-[#1a2027] border border-[#2d3748] text-white font-bold hover:bg-[#252d38] transition"
           title="Acercar"
         >
           +
         </button>
         <button
-          onClick={() => setZoom((z) => Math.max(z - 0.1, 0.3))}
+          onClick={() => cambiarZoom(-0.1)}
           className="w-10 h-10 rounded-lg bg-[#1a2027] border border-[#2d3748] text-white font-bold hover:bg-[#252d38] transition"
           title="Alejar"
         >
@@ -52,7 +66,7 @@ export default function MapaPage() {
         <button
           onClick={() => setZoom(0.65)}
           className="w-10 h-10 rounded-lg bg-[#1a2027] border border-[#2d3748] text-white text-xs hover:bg-[#252d38] transition"
-          title="Restablecer zoom"
+          title="Restablecer"
         >
           ⌂
         </button>

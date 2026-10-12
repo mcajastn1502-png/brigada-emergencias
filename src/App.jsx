@@ -2,8 +2,15 @@ import { useState } from 'react';
 import Header from '@/components/layout/Header';
 import NavTabs from '@/components/layout/NavTabs';
 import Toast from '@/components/layout/Toast';
+import BotonSOS from '@/components/sos/BotonSOS';
 import PersonalPage from '@/pages/PersonalPage';
 import MapaPage from '@/pages/MapaPage';
+import MiembrosPage from '@/pages/MiembrosPage';
+import IncidentesPage from '@/pages/IncidentesPage';
+import ProtocolosPage from '@/pages/ProtocolosPage';
+import PrimerosAuxiliosPage from '@/pages/PrimerosAuxiliosPage';
+import NormasPage from '@/pages/NormasPage';
+import HistorialPage from '@/pages/HistorialPage';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/useToast';
 
@@ -19,27 +26,17 @@ export default function App() {
       <main className="flex-1 overflow-y-auto">
         {tab === 'mapa' && <MapaPage />}
         {tab === 'personal' && <PersonalPage />}
-        {tab === 'incidentes' && (
-          <div className="p-6 text-slate-400">🚧 Migrando incidentes...</div>
-        )}
-        {tab === 'protocolos' && (
-          <div className="p-6 text-slate-400">🚧 Migrando protocolos...</div>
-        )}
-        {tab === 'primeros' && (
-          <div className="p-6 text-slate-400">🚧 Migrando primeros auxilios...</div>
-        )}
-        {tab === 'normas' && <div className="p-6 text-slate-400">🚧 Migrando normas...</div>}
-        {tab === 'miembros' && <div className="p-6 text-slate-400">🚧 Migrando miembros...</div>}
-        {tab === 'historial' && <div className="p-6 text-slate-400">🚧 Migrando historial...</div>}
+        {tab === 'incidentes' && <IncidentesPage />}
+        {tab === 'protocolos' && <ProtocolosPage />}
+        {tab === 'primeros' && <PrimerosAuxiliosPage />}
+        {tab === 'normas' && <NormasPage />}
+        {tab === 'miembros' && <MiembrosPage rol={rol} />}
+        {tab === 'historial' && <HistorialPage rol={rol} />}
         {tab === 'ayuda' && <div className="p-6 text-slate-400">🚧 Migrando ayuda...</div>}
       </main>
+
+      <BotonSOS />
       <Toast toasts={toasts} />
-      <button
-        onClick={() => toast('Prueba de toast ✓', 'success')}
-        className="fixed bottom-6 right-6 w-20 h-20 rounded-full bg-emergencia border-4 border-white font-bold shadow-2xl text-white"
-      >
-        SOS
-      </button>
     </div>
   );
 }

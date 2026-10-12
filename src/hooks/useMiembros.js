@@ -11,6 +11,13 @@ import { supabase } from '@/lib/supabase';
  * @property {boolean} activo
  * @property {number} x
  * @property {number} y
+ * @property {number} [x_fuera]
+ * @property {number} [y_fuera]
+ * @property {string} [telefono]
+ * @property {string} [telefono_emergencia]
+ * @property {string} [contacto_emergencia]
+ * @property {string} [tipo_sangre]
+ * @property {string} [email]
  */
 
 export function useMiembros() {
@@ -28,14 +35,11 @@ export function useMiembros() {
   useEffect(() => {
     cargar();
 
+    const nombreCanal = `miembros-realtime-${Math.random().toString(36).slice(2, 10)}`;
     const canal = supabase
-      .channel('miembros-realtime')
+      .channel(nombreCanal)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'miembros' }, (payload) => {
-        if (payload.eventType === 'INSERT') setMiembros((prev) => [...prev, payload.new]);
-        if (payload.eventType === 'UPDATE')
-          setMiembros((prev) => prev.map((m) => (m.id === payload.new.id ? payload.new : m)));
-        if (payload.eventType === 'DELETE')
-          setMiembros((prev) => prev.filter((m) => m.id !== payload.old.id));
+        // ...
       })
       .subscribe();
 
@@ -44,7 +48,7 @@ export function useMiembros() {
     };
   }, [cargar]);
 
-  /** @param {number} id */
+  /** Cambia el estado (dentro ↔ alrededores) */
   const toggleEstado = useCallback(
     async (id) => {
       const m = miembros.find((x) => x.id === id);
@@ -52,22 +56,81 @@ export function useMiembros() {
 
       const nuevo = m.estado === 'dentro' ? 'alrededores' : 'dentro';
 
-      // ⭐ 1. Actualización optimista — cambia el estado local INMEDIATAMENTE
       setMiembros((prev) => prev.map((x) => (x.id === id ? { ...x, estado: nuevo } : x)));
 
-      // 2. Enviar el cambio a Supabase
       const { error } = await supabase.from('miembros').update({ estado: nuevo }).eq('id', id);
 
-      // 3. Si algo falla, revertir el cambio local
       if (error) {
         console.error('❌ Error al actualizar miembro:', error);
         setMiembros((prev) => prev.map((x) => (x.id === id ? { ...x, estado: m.estado } : x)));
-      } else {
-        console.log(`✅ Miembro ${id} actualizado a: ${nuevo}`);
       }
     },
     [miembros]
   );
 
-  return { miembros, loading, toggleEstado, recargar: cargar };
+  /** Actualiza un miembro completo */
+  const actualizarMiembro = useCallback(async (id, cambios) => {
+    const { data, error } = await supabase
+      .from('miembros')
+      .update(cambios)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Error al actualizar:', error);
+      return { error };
+    }
+    return { data };
+  }, []);
+
+  /** Crea un nuevo miembro */
+  const crearMiembro = useCallback(async (nuevo) => {
+    const { data, error } = await supabase.from('miembros').insert(nuevo).select().single();
+    if (error) {
+      console.error('❌ Error al crear:', error);
+      return { error };
+    }
+    return { data };
+  }, []);
+
+  /** Inactiva / reactiva un miembro */
+  const toggleActivo = useCallback(
+    async (id) => {
+      const m = miembros.find((x) => x.id === id);
+      if (!m) return;
+
+      const nuevo = !m.activo;
+      setMiembros((prev) => prev.map((x) => (x.id === id ? { ...x, activo: nuevo } : x)));
+
+      const { error } = await supabase.from('miembros').update({ activo: nuevo }).eq('id', id);
+
+      if (error) {
+        console.error('❌ Error al cambiar activo:', error);
+        setMiembros((prev) => prev.map((x) => (x.id === id ? { ...x, activo: m.activo } : x)));
+      }
+    },
+    [miembros]
+  );
+
+  /** Elimina un miembro permanentemente */
+  const eliminarMiembro = useCallback(async (id) => {
+    const { error } = await supabase.from('miembros').delete().eq('id', id);
+    if (error) {
+      console.error('❌ Error al eliminar:', error);
+      return { error };
+    }
+    return { success: true };
+  }, []);
+
+  return {
+    miembros,
+    loading,
+    toggleEstado,
+    actualizarMiembro,
+    crearMiembro,
+    toggleActivo,
+    eliminarMiembro,
+    recargar: cargar,
+  };
 }

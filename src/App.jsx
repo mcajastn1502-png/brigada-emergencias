@@ -11,6 +11,7 @@ import ProtocolosPage from '@/pages/ProtocolosPage';
 import PrimerosAuxiliosPage from '@/pages/PrimerosAuxiliosPage';
 import NormasPage from '@/pages/NormasPage';
 import HistorialPage from '@/pages/HistorialPage';
+import AyudaPage from '@/pages/AyudaPage';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/useToast';
 
@@ -32,7 +33,7 @@ export default function App() {
         {tab === 'normas' && <NormasPage />}
         {tab === 'miembros' && <MiembrosPage rol={rol} />}
         {tab === 'historial' && <HistorialPage rol={rol} />}
-        {tab === 'ayuda' && <div className="p-6 text-slate-400">🚧 Migrando ayuda...</div>}
+        {tab === 'ayuda' && <AyudaPage onNavegar={setTab} />}
       </main>
 
       <BotonSOS />

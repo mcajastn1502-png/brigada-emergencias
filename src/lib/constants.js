@@ -406,3 +406,169 @@ export const CATEGORIAS_NORMAS = [
   { value: 'emergencias', label: '🚨 Emergencias' },
   { value: 'tecnico', label: '🔧 Técnico' },
 ];
+/**
+ * Pasos del tour guiado
+ */
+export const TOUR_PASOS = [
+  {
+    id: 'paso1',
+    titulo: '🗺️ Explora el mapa en vivo',
+    descripcion:
+      'Ve a la pestaña <strong>Mapa en vivo</strong>. Verás los 12 brigadistas posicionados en el plano de la bodega con sus iniciales.',
+    accion: 'Ir al mapa',
+    irA: 'mapa',
+  },
+  {
+    id: 'paso2',
+    titulo: '👆 Haz clic en un brigadista',
+    descripcion:
+      'En el mapa, haz <strong>clic sobre cualquier brigadista</strong> para ver su información completa: teléfono, contacto de emergencia, tipo de sangre, etc.',
+    accion: 'Probar ahora',
+    irA: 'mapa',
+  },
+  {
+    id: 'paso3',
+    titulo: '👥 Revisa la pestaña Personal',
+    descripcion:
+      'Ve a <strong>👥 Personal</strong> para ver la lista completa de brigadistas con contadores por rol.',
+    accion: 'Ir a Personal',
+    irA: 'personal',
+  },
+  {
+    id: 'paso4',
+    titulo: '🚨 Declara un incidente',
+    descripcion:
+      'En <strong>🚨 Incidentes</strong>, pulsa <em>+ Declarar nuevo incidente</em>. El cronómetro arranca y se muestra el protocolo recomendado.',
+    accion: 'Ir a Incidentes',
+    irA: 'incidentes',
+  },
+  {
+    id: 'paso5',
+    titulo: '🧪 Usa modo simulacro',
+    descripcion:
+      'Al declarar un incidente, marca <strong>Modo simulacro</strong>. Ideal para entrenamientos sin alertar al ECU-911.',
+    accion: 'Probar simulacro',
+    irA: 'incidentes',
+  },
+  {
+    id: 'paso6',
+    titulo: '🚨 Domina el botón SOS',
+    descripcion:
+      'Toque corto → menú con opciones (911, ambulancia, bomberos). <strong>Mantener 1.5 s</strong> → emergencia inmediata a toda la brigada.',
+    accion: 'Ver ahora',
+    irA: 'ayuda',
+    extra: 'sos',
+  },
+  {
+    id: 'paso7',
+    titulo: '🎥 Consulta los videos',
+    descripcion:
+      'En <strong>🩹 Primeros Auxilios</strong>, cada procedimiento tiene un video tutorial con su miniatura.',
+    accion: 'Ver videos',
+    irA: 'primeros',
+  },
+  {
+    id: 'paso8',
+    titulo: '📁 Audita el historial',
+    descripcion:
+      'Cambia a <strong>Coordinador</strong> (arriba derecha) y abre <strong>📁 Historial</strong>. Puedes filtrar, buscar y exportar a CSV.',
+    accion: 'Ir a Historial',
+    irA: 'historial',
+  },
+];
+
+/**
+ * Preguntas frecuentes
+ */
+export const FAQ_ITEMS = [
+  {
+    id: 'faq1',
+    pregunta: '¿Qué hago si presiono SOS por error?',
+    respuesta:
+      'Ve a 🚨 Incidentes → pulsa <strong>✓ Finalizar incidente</strong> y reporta al coordinador. Quedará registrado como "falso positivo" en el historial.',
+  },
+  {
+    id: 'faq2',
+    pregunta: '¿La app funciona sin internet dentro de la bodega?',
+    respuesta:
+      'Parcialmente. Los datos se cargan desde Supabase, por lo que necesitas conexión para ver información actualizada. Los protocolos y primeros auxilios se pueden consultar si ya se cargaron previamente en el navegador.',
+  },
+  {
+    id: 'faq3',
+    pregunta: '¿Cómo agrego un brigadista nuevo?',
+    respuesta:
+      'Cambia a <strong>Coordinador</strong> → <strong>🪪 Miembros</strong> → <em>+ Agregar brigadista</em>. Rellena nombre, rol y datos de contacto.',
+  },
+  {
+    id: 'faq4',
+    pregunta: '¿Por qué mi ubicación en el mapa no es exacta?',
+    respuesta:
+      'La ubicación actual se asigna manualmente en la base de datos. En una futura versión se integrará GPS del celular con precisión de ±2 m.',
+  },
+  {
+    id: 'faq5',
+    pregunta: '¿Puedo probar todo sin afectar registros reales?',
+    respuesta:
+      'Sí. Marca <strong>Modo simulacro</strong> al declarar cualquier incidente. Los simulacros quedan registrados pero diferenciados en el historial.',
+  },
+  {
+    id: 'faq6',
+    pregunta: '¿Los videos de primeros auxilios son oficiales?',
+    respuesta:
+      'Provienen de YouTube y son material de apoyo. <strong>No sustituyen capacitación certificada</strong> de la Cruz Roja o bomberos.',
+  },
+  {
+    id: 'faq7',
+    pregunta: '¿Qué diferencia hay entre los 3 roles?',
+    respuesta:
+      '<strong>Visitante:</strong> solo lectura. <strong>Brigadista:</strong> puede declarar incidentes y ver el mapa. <strong>Coordinador:</strong> acceso total (miembros, historial, eliminar registros).',
+  },
+  {
+    id: 'faq8',
+    pregunta: '¿Con qué frecuencia se actualiza la app?',
+    respuesta:
+      'Cada vez que se hace push a GitHub, el deploy es automático. Puedes verificar la versión más reciente recargando con Ctrl+Shift+R.',
+  },
+];
+
+/**
+ * Mejoras integradas en esta versión
+ */
+export const MEJORAS = [
+  { icono: '🧪', nombre: 'Modo simulacro', estado: 'activo' },
+  { icono: '🎯', nombre: 'Asignación automática de equipo', estado: 'activo' },
+  { icono: '📊', nombre: 'Realtime con Supabase', estado: 'activo' },
+  { icono: '👤', nombre: 'Roles diferenciados', estado: 'activo' },
+  { icono: '🔔', nombre: 'Toasts de retroalimentación', estado: 'activo' },
+  { icono: '🚨', nombre: 'SOS escalonado (corto/mantener)', estado: 'activo' },
+  { icono: '🎥', nombre: 'Videos tutoriales', estado: 'activo' },
+  { icono: '📁', nombre: 'Historial con exportación CSV', estado: 'activo' },
+  { icono: '🗺️', nombre: 'Mapa arquitectónico horizontal', estado: 'activo' },
+  { icono: '🎙️', nombre: 'Modo Manos Libres por voz', estado: 'pendiente' },
+  { icono: '📷', nombre: 'QR/NFC para check-in', estado: 'fase2' },
+  { icono: '📡', nombre: 'GPS en tiempo real', estado: 'fase2' },
+];
+
+/**
+ * Tabla de roles para la pestaña Ayuda
+ */
+export const ROLES_TABLA = [
+  {
+    rol: 'emergencia',
+    cantidad: 4,
+    responsabilidad: 'Atención inicial, evaluación médica, comunicación con ECU-911',
+    prioridad: 'Derrames, accidentes',
+  },
+  {
+    rol: 'rescatista',
+    cantidad: 4,
+    responsabilidad: 'Evacuación, rescate de personas, rutas seguras',
+    prioridad: 'Rescates, evacuaciones',
+  },
+  {
+    rol: 'incendios',
+    cantidad: 4,
+    responsabilidad: 'Control de fuego, uso de extintores, corte de energía',
+    prioridad: 'Incendios, explosiones',
+  },
+];

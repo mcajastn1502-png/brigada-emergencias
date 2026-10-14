@@ -25,32 +25,34 @@ export default function ModalBrigadista({ miembro, onClose, onToggle }) {
 
   return (
     <div
-      className="fixed inset-0 z-[9999] bg-black/70 flex items-center justify-center p-4"
+      className="fixed inset-0 z-[9999] bg-black/70 flex items-center justify-center p-0 md:p-4"
       onClick={onClose}
     >
       <div
-        className="bg-[#1a2027] border border-[#2d3748] rounded-xl max-w-md w-full overflow-hidden shadow-2xl"
+        className="bg-[#1a2027] border-0 md:border md:border-[#2d3748] rounded-none md:rounded-xl w-full h-full md:h-auto md:max-w-md overflow-hidden shadow-2xl flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className={`bg-gradient-to-r ${colores[miembro.rol]} p-5 flex items-center gap-4`}>
-          <div className="w-16 h-16 rounded-full bg-white/20 border-2 border-white flex items-center justify-center text-white text-2xl font-bold">
+        <div
+          className={`bg-gradient-to-r ${colores[miembro.rol]} p-4 md:p-5 flex items-center gap-3 md:gap-4 flex-shrink-0`}
+        >
+          <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-white/20 border-2 border-white flex items-center justify-center text-white text-xl md:text-2xl font-bold flex-shrink-0">
             {iniciales}
           </div>
-          <div className="flex-1">
-            <h2 className="text-white font-bold text-lg">{miembro.nombre}</h2>
-            <p className="text-white/90 text-sm">{roles[miembro.rol]}</p>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-white font-bold text-base md:text-lg truncate">{miembro.nombre}</h2>
+            <p className="text-white/90 text-xs md:text-sm">{roles[miembro.rol]}</p>
           </div>
           <button
             onClick={onClose}
-            className="text-white/80 hover:text-white text-2xl leading-none"
+            className="text-white/80 hover:text-white text-2xl md:text-3xl leading-none flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10"
           >
             ✕
           </button>
         </div>
 
-        {/* Info */}
-        <div className="p-5 space-y-3 text-sm">
+        {/* Info (scrollable en móvil) */}
+        <div className="p-4 md:p-5 space-y-2 md:space-y-3 text-sm flex-1 overflow-y-auto">
           <Row icon="📍" label="Estado actual">
             <span
               className={`px-2 py-0.5 rounded text-xs font-bold ${
@@ -87,19 +89,17 @@ export default function ModalBrigadista({ miembro, onClose, onToggle }) {
           </Row>
 
           <Row icon="👥" label="Contacto">
-            <span className="text-slate-300">
+            <span className="text-slate-300 text-right text-xs md:text-sm">
               {miembro.contacto_emergencia || 'No registrado'}
             </span>
           </Row>
 
           <Row icon="🩸" label="Tipo de sangre">
-            <span className="text-red-400 font-bold">
-              {miembro.tipo_sangre || 'No registrado'}
-            </span>
+            <span className="text-red-400 font-bold">{miembro.tipo_sangre || 'No registrado'}</span>
           </Row>
 
           <Row icon="✉️" label="Email">
-            <span className="text-slate-300 text-xs">
+            <span className="text-slate-300 text-xs text-right break-all">
               {miembro.email || 'No registrado'}
             </span>
           </Row>
@@ -110,10 +110,10 @@ export default function ModalBrigadista({ miembro, onClose, onToggle }) {
         </div>
 
         {/* Acciones */}
-        <div className="p-4 border-t border-[#2d3748] flex gap-2">
+        <div className="p-3 md:p-4 border-t border-[#2d3748] flex gap-2 flex-shrink-0">
           <button
             onClick={onToggle}
-            className={`flex-1 py-2.5 rounded-lg font-bold text-sm transition ${
+            className={`flex-1 py-3 md:py-2.5 rounded-lg font-bold text-sm transition ${
               miembro.estado === 'dentro'
                 ? 'bg-yellow-500 hover:bg-yellow-600 text-black'
                 : 'bg-green-500 hover:bg-green-600 text-white'
@@ -123,7 +123,7 @@ export default function ModalBrigadista({ miembro, onClose, onToggle }) {
           </button>
           <button
             onClick={onClose}
-            className="px-4 py-2.5 rounded-lg border border-[#2d3748] text-slate-300 hover:bg-[#252d38] text-sm"
+            className="px-4 py-3 md:py-2.5 rounded-lg border border-[#2d3748] text-slate-300 hover:bg-[#252d38] text-sm"
           >
             Cerrar
           </button>
@@ -136,11 +136,11 @@ export default function ModalBrigadista({ miembro, onClose, onToggle }) {
 function Row({ icon, label, children }) {
   return (
     <div className="flex items-center justify-between gap-3 py-2 border-b border-[#2d3748]/50 last:border-0">
-      <span className="text-slate-400 text-xs flex items-center gap-2">
+      <span className="text-slate-400 text-xs flex items-center gap-2 flex-shrink-0">
         <span>{icon}</span>
         {label}
       </span>
-      <span className="text-right">{children}</span>
+      <span className="text-right min-w-0">{children}</span>
     </div>
   );
 }

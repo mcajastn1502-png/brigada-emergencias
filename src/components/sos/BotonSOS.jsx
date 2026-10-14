@@ -175,7 +175,7 @@ export default function BotonSOS() {
         onTouchStart={iniciarMantener}
         onTouchEnd={cancelarMantener}
         onClick={handleClick}
-        className={`fixed bottom-6 right-6 z-[1000] w-20 h-20 rounded-full border-4 border-white font-bold shadow-2xl text-white select-none transition-all duration-200 flex flex-col items-center justify-center overflow-hidden ${
+        className={`fixed bottom-4 right-4 md:bottom-6 md:right-6 z-[1000] w-16 h-16 md:w-20 md:h-20 rounded-full border-4 border-white font-bold shadow-2xl text-white select-none transition-all duration-200 flex flex-col items-center justify-center overflow-hidden ${
           incidenteActivo
             ? 'bg-red-600 animate-pulse scale-110'
             : manteniendo
@@ -224,20 +224,15 @@ export default function BotonSOS() {
         )}
 
         {/* Icono y texto */}
-        <span className="text-2xl leading-none relative z-10">
-          {incidenteActivo ? '⚠' : '🚨'}
-        </span>
-        <span className="text-[10px] font-bold relative z-10 leading-tight mt-0.5">
+        <span className="text-xl md:text-2xl leading-none relative z-10"></span>
+        <span className="text-[8px] md:text-[10px] font-bold relative z-10 leading-tight mt-0.5">
           {incidenteActivo ? 'FINALIZAR' : manteniendo ? 'SUELTE' : 'SOS'}
         </span>
       </button>
 
       {/* Overlay para cerrar menú al hacer click afuera */}
       {menuAbierto && (
-        <div
-          className="fixed inset-0 z-[998]"
-          onClick={() => setMenuAbierto(false)}
-        />
+        <div className="fixed inset-0 z-[998]" onClick={() => setMenuAbierto(false)} />
       )}
     </>
   );

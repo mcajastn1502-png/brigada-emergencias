@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMiembros } from '@/hooks/useMiembros';
 import MapaBodega from '@/components/mapa/MapaBodega';
 import Leyenda from '@/components/mapa/Leyenda';
+import BotonGPS from '@/components/mapa/BotonGPS';
 
 export default function MapaPage() {
   const { miembros, loading, toggleEstado } = useMiembros();
@@ -98,6 +99,9 @@ export default function MapaPage() {
           </div>
         </div>
       </div>
+
+      {/* ⭐ Botón GPS flotante */}
+      <BotonGPS miembros={miembros} />
     </div>
   );
 }

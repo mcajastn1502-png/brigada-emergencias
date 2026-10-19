@@ -572,3 +572,110 @@ export const ROLES_TABLA = [
     prioridad: 'Incendios, explosiones',
   },
 ];
+/**
+ * Coordenadas de referencia de la bodega
+ * ⚠️ IMPORTANTE: ajustar con las coordenadas reales
+ *
+ * Esquina NW = arriba-izquierda del SVG (x=60, y=100)
+ * Esquina SE = abajo-derecha del SVG (x=1444, y=870)
+ */
+/**
+ * Coordenadas reales de las 4 esquinas de la bodega (Google Maps)
+ * Orden: NW (arriba-izq), NE (arriba-der), SW (abajo-izq), SE (abajo-der)
+ */
+export const BODEGA_REF = {
+  nw: { lat: -0.112451, lon: -78.473528, x: 60, y: 100 }, // Noroeste
+  ne: { lat: -0.112478, lon: -78.473315, x: 1444, y: 100 }, // Noreste
+  sw: { lat: -0.113064, lon: -78.4736, x: 60, y: 870 }, // Suroeste
+  se: { lat: -0.113107, lon: -78.473347, x: 1444, y: 870 }, // Sureste
+};
+
+/**
+ * Convertir lat/lon a coordenadas del SVG usando transformación bilineal
+ * Maneja correctamente la bodega aunque esté ligeramente rotada.
+ */
+export function latLonAXY(lat, lon) {
+  const { nw, ne, sw, se } = BODEGA_REF;
+
+  // Calcular progreso horizontal (u) y vertical (v) aproximados
+  // Usamos los vectores desde NW.
+  // Vector horizontal (Oeste -> Este)
+  const vectorEste = { lat: ne.lat - nw.lat, lon: ne.lon - nw.lon };
+  // Vector vertical (Norte -> Sur)
+  const vectorSur = { lat: sw.lat - nw.lat, lon: sw.lon - nw.lon };
+
+  // Proyectar el punto actual en los ejes
+  // Para simplificar en distancias geográficas locales, multiplicamos lat por un factor (111320)
+  // y lon por otro (111250) para que sean aproximadamente "metros".
+  const latM = lat * 111320;
+  const lonM = lon * 111250;
+  const nwLatM = nw.lat * 111320;
+  const nwLonM = nw.lon * 111250;
+
+  const dx = lonM - nwLonM;
+  const dy = latM - nwLatM;
+
+  const vx = vectorEste.lon * 111250;
+  const vy = vectorEste.lat * 111320;
+
+  const wx = vectorSur.lon * 111250;
+  const wy = vectorSur.lat * 111320;
+
+  // Resolver sistema de ecuaciones para obtener u (0 a 1) y v (0 a 1)
+  // dx = u * vx + v * wx
+  // dy = u * vy + v * wy
+  const det = vx * wy - vy * wx;
+
+  let u = 0;
+  let v = 0;
+
+  if (Math.abs(det) > 0.0001) {
+    u = (dx * wy - dy * wx) / det;
+    v = (vx * dy - vy * dx) / det;
+  }
+
+  // Convertir u, v a coordenadas del SVG
+  const x = nw.x + u * (ne.x - nw.x);
+  const y = nw.y + v * (sw.y - nw.y);
+
+  // Limitar a los bordes del SVG para que no se salga
+  return {
+    x: Math.max(60, Math.min(1444, x)),
+    y: Math.max(100, Math.min(870, y)),
+  };
+}
+
+/**
+ * Calcular distancia entre 2 coordenadas (en metros)
+ * Fórmula de Haversine
+ */
+export function distanciaMetros(lat1, lon1, lat2, lon2) {
+  const R = 6371000; // Radio de la Tierra en metros
+  const φ1 = (lat1 * Math.PI) / 180;
+  const φ2 = (lat2 * Math.PI) / 180;
+  const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+  const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+
+  const a =
+    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c;
+}
+
+/**
+ * Verificar si una coordenada está dentro de la bodega
+ * (margen de 20m para permitir GPS impreciso)
+ */
+export function estaDentroBodega(lat, lon) {
+  const { nw, se } = BODEGA_REF;
+  const MARGEN = 0.0002; // ~20 metros
+
+  const latMin = Math.min(nw.lat, se.lat) - MARGEN;
+  const latMax = Math.max(nw.lat, se.lat) + MARGEN;
+  const lonMin = Math.min(nw.lon, se.lon) - MARGEN;
+  const lonMax = Math.max(nw.lon, se.lon) + MARGEN;
+
+  return lat >= latMin && lat <= latMax && lon >= lonMin && lon <= lonMax;
+}

@@ -39,9 +39,23 @@ export function useMiembros() {
     const canal = supabase
       .channel(nombreCanal)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'miembros' }, (payload) => {
-        // ...
+        console.log('📡 Cambio en tiempo real recibido:', payload.eventType, payload.new?.nombre);
+
+        if (payload.eventType === 'INSERT') {
+          setMiembros((prev) => [...prev, payload.new]);
+        }
+
+        if (payload.eventType === 'UPDATE') {
+          setMiembros((prev) => prev.map((m) => (m.id === payload.new.id ? payload.new : m)));
+        }
+
+        if (payload.eventType === 'DELETE') {
+          setMiembros((prev) => prev.filter((m) => m.id !== payload.old.id));
+        }
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 Estado canal Realtime:', status);
+      });
 
     return () => {
       supabase.removeChannel(canal);

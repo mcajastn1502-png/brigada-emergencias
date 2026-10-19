@@ -69,7 +69,7 @@ export function useGPS(miembroId) {
 
         // Solo actualizar Supabase cada 15 segundos (para no saturar)
         const ahora = Date.now();
-        if (!intervaloRef.current || ahora - intervaloRef.current > 15000) {
+        if (!intervaloRef.current || ahora - intervaloRef.current > 5000) {
           intervaloRef.current = ahora;
           const { error: err } = await actualizarSupabase(latitude, longitude, accuracy);
           if (err) {

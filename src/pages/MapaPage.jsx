@@ -78,7 +78,7 @@ export default function MapaPage() {
 
       {/* Contador dentro/fuera */}
       <div className="fixed top-4 right-4 z-50 bg-[#1a2027]/95 border border-[#2d3748] rounded-lg p-3 text-xs backdrop-blur-sm">
-        <div className="flex items-center gap-4 text-slate-300">
+        <div className="flex items-center gap-3 text-slate-300 flex-wrap">
           <div className="flex items-center gap-1.5">
             <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
             <span>
@@ -95,6 +95,15 @@ export default function MapaPage() {
                 {miembros.filter((m) => m.estado === 'alrededores').length}
               </strong>{' '}
               fuera
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-purple-500" />
+            <span>
+              <strong className="text-white">
+                {miembros.filter((m) => m.estado === 'indeterminado').length}
+              </strong>{' '}
+              imprecisa
             </span>
           </div>
         </div>

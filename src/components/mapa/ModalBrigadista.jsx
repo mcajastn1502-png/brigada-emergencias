@@ -54,14 +54,26 @@ export default function ModalBrigadista({ miembro, onClose, onToggle }) {
           <Row icon="📍" label="Estado actual">
             <span
               className={`px-2 py-0.5 rounded text-xs font-bold ${
-                miembro.estado === 'dentro'
-                  ? 'bg-green-500/20 text-green-400'
-                  : 'bg-yellow-500/20 text-yellow-400'
+                miembro.estado === 'indeterminado'
+                  ? 'bg-purple-500/20 text-purple-300'
+                  : miembro.estado === 'dentro'
+                    ? 'bg-green-500/20 text-green-400'
+                    : 'bg-yellow-500/20 text-yellow-400'
               }`}
             >
-              {miembro.estado === 'dentro' ? '🟢 Dentro' : '🟡 Alrededores'}
+              {miembro.estado === 'indeterminado'
+                ? '🟣 Ubicación imprecisa'
+                : miembro.estado === 'dentro'
+                  ? '🟢 Dentro'
+                  : '🟡 Alrededores'}
             </span>
           </Row>
+
+          {miembro.gps_precision !== null && miembro.gps_precision !== undefined && (
+            <Row icon="🎯" label="Precisión GPS">
+              <span className="text-slate-300 text-xs">±{Math.round(miembro.gps_precision)} m</span>
+            </Row>
+          )}
 
           <Row icon="📞" label="Teléfono">
             {miembro.telefono ? (

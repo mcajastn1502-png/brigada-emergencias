@@ -595,7 +595,7 @@ export const BODEGA_REF = {
  * Maneja correctamente la bodega aunque esté ligeramente rotada.
  */
 export function latLonAXY(lat, lon) {
-  const { nw, ne, sw, se } = BODEGA_REF;
+  const { nw, ne, sw } = BODEGA_REF;
 
   // Calcular progreso horizontal (u) y vertical (v) aproximados
   // Usamos los vectores desde NW.
@@ -665,17 +665,63 @@ export function distanciaMetros(lat1, lon1, lat2, lon2) {
 }
 
 /**
- * Verificar si una coordenada está dentro de la bodega
- * (margen de 20m para permitir GPS impreciso)
+ * Determina si la ubicación está dentro de la bodega considerando el radio de
+ * precisión reportado por el GPS. Devuelve null cuando el radio cruza el
+ * perímetro y no es posible confirmar si la persona está dentro o fuera.
+ * @returns {boolean|null}
  */
-export function estaDentroBodega(lat, lon) {
-  const { nw, se } = BODEGA_REF;
-  const MARGEN = 0.0002; // ~20 metros
+export function estaDentroBodega(lat, lon, precisionMetros = 0) {
+  if (
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lon) ||
+    !Number.isFinite(precisionMetros) ||
+    precisionMetros < 0 ||
+    lat < -90 ||
+    lat > 90 ||
+    lon < -180 ||
+    lon > 180
+  ) {
+    return null;
+  }
 
-  const latMin = Math.min(nw.lat, se.lat) - MARGEN;
-  const latMax = Math.max(nw.lat, se.lat) + MARGEN;
-  const lonMin = Math.min(nw.lon, se.lon) - MARGEN;
-  const lonMax = Math.max(nw.lon, se.lon) + MARGEN;
+  const { nw, ne, sw, se } = BODEGA_REF;
+  const vertices = [nw, ne, se, sw];
+  const latReferencia = vertices.reduce((suma, punto) => suma + punto.lat, 0) / vertices.length;
+  const lonReferencia = vertices.reduce((suma, punto) => suma + punto.lon, 0) / vertices.length;
+  const metrosPorGradoLon = 111320 * Math.cos((latReferencia * Math.PI) / 180);
 
-  return lat >= latMin && lat <= latMax && lon >= lonMin && lon <= lonMax;
+  const proyectar = (punto) => ({
+    x: (punto.lon - lonReferencia) * metrosPorGradoLon,
+    y: (punto.lat - latReferencia) * 111320,
+  });
+
+  const punto = proyectar({ lat, lon });
+  const poligono = vertices.map(proyectar);
+  let dentro = false;
+  let distanciaMinima = Infinity;
+
+  for (let i = 0, j = poligono.length - 1; i < poligono.length; j = i++) {
+    const a = poligono[j];
+    const b = poligono[i];
+    const cruza =
+      (a.y > punto.y) !== (b.y > punto.y) &&
+      punto.x < ((b.x - a.x) * (punto.y - a.y)) / (b.y - a.y) + a.x;
+    if (cruza) dentro = !dentro;
+
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const longitudCuadrada = dx * dx + dy * dy;
+    const t =
+      longitudCuadrada === 0
+        ? 0
+        : Math.max(
+            0,
+            Math.min(1, ((punto.x - a.x) * dx + (punto.y - a.y) * dy) / longitudCuadrada)
+          );
+    const distancia = Math.hypot(punto.x - (a.x + t * dx), punto.y - (a.y + t * dy));
+    distanciaMinima = Math.min(distanciaMinima, distancia);
+  }
+
+  if (distanciaMinima <= precisionMetros) return null;
+  return dentro;
 }

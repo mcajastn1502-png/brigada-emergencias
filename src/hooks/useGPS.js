@@ -24,14 +24,14 @@ export function useGPS(miembroId) {
       if (!miembroId) return { error: 'Sin miembro seleccionado' };
 
       const { x, y } = latLonAXY(lat, lon);
-      const dentro = estaDentroBodega(lat, lon);
+      const dentro = estaDentroBodega(lat, lon, precisionMetros);
 
       const { error: err } = await supabase
         .from('miembros')
         .update({
           x,
           y,
-          estado: dentro ? 'dentro' : 'alrededores',
+          estado: dentro === null ? 'indeterminado' : dentro ? 'dentro' : 'alrededores',
           gps_activo: true,
           gps_ultima_actualizacion: new Date().toISOString(),
           gps_precision: precisionMetros,

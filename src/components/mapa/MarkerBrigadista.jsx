@@ -20,7 +20,7 @@ function calcularIniciales(nombre) {
  *   miembro: {
  *     id: number, nombre: string,
  *     rol: 'emergencia'|'rescatista'|'incendios',
- *     estado: 'dentro'|'alrededores',
+ *     estado: 'dentro'|'alrededores'|'indeterminado',
  *     iniciales: string, x: number, y: number,
  *     x_fuera?: number, y_fuera?: number
  *   },
@@ -29,8 +29,10 @@ function calcularIniciales(nombre) {
  */
 export default function MarkerBrigadista({ miembro, onClick }) {
   // Elegir posición según estado
-  const xPos = miembro.estado === 'dentro' ? miembro.x : miembro.x_fuera ?? miembro.x;
-  const yPos = miembro.estado === 'dentro' ? miembro.y : miembro.y_fuera ?? 920;
+  const posicionGPSImprecisa = miembro.estado === 'indeterminado' && miembro.gps_activo;
+  const estaEnMapaInterior = miembro.estado === 'dentro' || posicionGPSImprecisa;
+  const xPos = estaEnMapaInterior ? miembro.x : miembro.x_fuera ?? miembro.x;
+  const yPos = estaEnMapaInterior ? miembro.y : miembro.y_fuera ?? 920;
 
   // Convertir 0-1000 → 1500×1000
   const svgX = (xPos / 1000) * 1500;
@@ -54,7 +56,13 @@ export default function MarkerBrigadista({ miembro, onClick }) {
       onClick={onClick}
     >
       <title>
-        {miembro.nombre} — {miembro.estado === 'dentro' ? 'Dentro' : 'Alrededores'} (clic para ver info)
+        {miembro.nombre} —{' '}
+        {miembro.estado === 'indeterminado'
+          ? `Ubicación imprecisa${miembro.gps_precision ? ` (±${Math.round(miembro.gps_precision)} m)` : ''}`
+          : miembro.estado === 'dentro'
+            ? 'Dentro'
+            : 'Alrededores'}{' '}
+        (clic para ver info)
       </title>
 
       {/* Halo de estado */}
@@ -62,7 +70,13 @@ export default function MarkerBrigadista({ miembro, onClick }) {
         cx="0"
         cy="0"
         r="22"
-        fill={miembro.estado === 'dentro' ? '#22c55e' : '#eab308'}
+        fill={
+          miembro.estado === 'indeterminado'
+            ? '#a855f7'
+            : miembro.estado === 'dentro'
+              ? '#22c55e'
+              : '#eab308'
+        }
         opacity="0.3"
       />
 

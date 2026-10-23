@@ -11,10 +11,11 @@ export default function PersonalPage() {
     <div className="p-4 space-y-4">
       <h2 className="text-lg font-bold">👥 Personal en bodega</h2>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Stat label="Total" value={activos.length} color="text-blue-400" />
         <Stat label="Dentro" value={activos.filter((m) => m.estado === 'dentro').length} color="text-green-500" />
         <Stat label="Alrededores" value={activos.filter((m) => m.estado === 'alrededores').length} color="text-yellow-500" />
+        <Stat label="Imprecisa" value={activos.filter((m) => m.estado === 'indeterminado').length} color="text-purple-400" />
       </div>
 
       <div className="bg-panel border border-borderDark rounded-lg">
@@ -32,7 +33,11 @@ export default function PersonalPage() {
               </span>
               <strong>{m.nombre}</strong>
               <span className="text-slate-400">
-                {m.estado === 'dentro' ? '🟢 Dentro' : '🟡 Alrededores'}
+                {m.estado === 'indeterminado'
+                  ? `🟣 Ubicación imprecisa${m.gps_precision ? ` (±${Math.round(m.gps_precision)} m)` : ''}`
+                  : m.estado === 'dentro'
+                    ? '🟢 Dentro'
+                    : '🟡 Alrededores'}
               </span>
             </div>
             <button

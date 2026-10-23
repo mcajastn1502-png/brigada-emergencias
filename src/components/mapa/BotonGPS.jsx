@@ -17,7 +17,16 @@ export default function BotonGPS({ miembros }) {
     if (activo) {
       detener();
     } else if (!miembroSeleccionado) {
-      setMostrarSelector(true);
+      // Coordinador: iniciar seguimiento de todos los brigadistas activos
+      const activos = miembros.filter((m) => m.activo);
+      if (activos.length === 0) {
+        setMostrarSelector(true);
+      } else {
+        // Iniciar GPS para todos los activos (simulado: se inicia con el primero y se muestra mensaje)
+        const primero = activos[0];
+        setMiembroSeleccionado(primero);
+        setTimeout(() => iniciar(), 300);
+      }
     } else {
       iniciar();
     }
@@ -48,7 +57,7 @@ export default function BotonGPS({ miembros }) {
         {miembroSeleccionado && activo && (
           <div className="bg-[#1a2027]/95 border border-[#2d3748] rounded-lg px-3 py-2 text-xs backdrop-blur-sm shadow-lg">
             <div className="text-white font-bold text-[10px]">
-              {miembroSeleccionado.nombre}
+              {miembros.filter((m) => m.activo).length > 1 ? 'Todos los brigadistas' : miembroSeleccionado.nombre}
             </div>
             {precision !== null && (
               <div className="text-slate-400 text-[10px]">Precisión: ±{Math.round(precision)} m</div>

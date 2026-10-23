@@ -16,6 +16,12 @@ export function useAuth() {
 
   /** @param {RolSesion} nuevo */
   const cambiarRol = (nuevo) => {
+    // Validación básica: solo roles permitidos
+    const rolesValidos = ['visitante', 'brigadista', 'coordinador'];
+    if (!rolesValidos.includes(nuevo)) {
+      console.warn('Intento de asignar rol no válido:', nuevo);
+      return;
+    }
     setRol(nuevo);
     localStorage.setItem('brigada_rol', nuevo);
   };

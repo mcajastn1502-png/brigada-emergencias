@@ -69,7 +69,16 @@ export default function BotonSOS() {
     setMenuAbierto((prev) => !prev);
   };
 
+  const [ultimoSOS, setUltimoSOS] = useState(0);
+  const COOLDOWN_SOS = 30000; // 30 segundos entre emergencias
+
   const declararEmergencia = async () => {
+    const ahora = Date.now();
+    if (ahora - ultimoSOS < COOLDOWN_SOS) {
+      toast('⏳ Espera 30 segundos antes de otra emergencia', 'error');
+      return;
+    }
+    setUltimoSOS(ahora);
     cancelarMantener();
     if (incidenteActivo) {
       toast('⚠ Ya hay un incidente activo', 'error');

@@ -7,7 +7,19 @@ export default function ModalNuevoIncidente({ onClose, onDeclarar }) {
   const [descripcion, setDescripcion] = useState('');
   const [simulacro, setSimulacro] = useState(false);
 
+  const [errores, setErrores] = useState({});
+
+  const validar = () => {
+    const nuevos = {};
+    if (!categoria) nuevos.categoria = 'Seleccione una categoría';
+    if (!ubicacion.trim()) nuevos.ubicacion = 'Ingrese la ubicación';
+    if (!descripcion.trim()) nuevos.descripcion = 'Ingrese una descripción';
+    setErrores(nuevos);
+    return Object.keys(nuevos).length === 0;
+  };
+
   const handleSubmit = () => {
+    if (!validar()) return;
     onDeclarar({ categoria, ubicacion, descripcion, simulacro });
   };
 
@@ -34,7 +46,7 @@ export default function ModalNuevoIncidente({ onClose, onDeclarar }) {
             <select
               value={categoria}
               onChange={(e) => setCategoria(e.target.value)}
-              className="w-full bg-[#0f1419] border border-[#2d3748] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500"
+              className={`w-full bg-[#0f1419] border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500 ${errores.categoria ? 'border-red-500' : 'border-[#2d3748]'}`}
             >
               {CATEGORIAS_INCIDENTE.map((c) => (
                 <option key={c.value} value={c.value}>
@@ -42,26 +54,29 @@ export default function ModalNuevoIncidente({ onClose, onDeclarar }) {
                 </option>
               ))}
             </select>
+            {errores.categoria && <span className="text-red-500 text-xs mt-1 block">{errores.categoria}</span>}
           </Field>
 
-          <Field label="Ubicación / zona">
+          <Field label="Ubicación / zona *">
             <input
               type="text"
               value={ubicacion}
               onChange={(e) => setUbicacion(e.target.value)}
               placeholder="Ej: Galpón principal, pasillo 3"
-              className="w-full bg-[#0f1419] border border-[#2d3748] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500"
+              className={`w-full bg-[#0f1419] border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500 ${errores.ubicacion ? 'border-red-500' : 'border-[#2d3748]'}`}
             />
+            {errores.ubicacion && <span className="text-red-500 text-xs mt-1 block">{errores.ubicacion}</span>}
           </Field>
 
-          <Field label="Descripción">
+          <Field label="Descripción *">
             <textarea
               rows="3"
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
               placeholder="Describa brevemente lo ocurrido..."
-              className="w-full bg-[#0f1419] border border-[#2d3748] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500 resize-none"
+              className={`w-full bg-[#0f1419] border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500 resize-none ${errores.descripcion ? 'border-red-500' : 'border-[#2d3748]'}`}
             />
+            {errores.descripcion && <span className="text-red-500 text-xs mt-1 block">{errores.descripcion}</span>}
           </Field>
 
           {/* Modo simulacro */}

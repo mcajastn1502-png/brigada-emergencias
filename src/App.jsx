@@ -21,7 +21,9 @@ export default function App() {
   const [tab, setTab] = useState('personal');
 
   return (
-    <div className="h-screen flex flex-col bg-bgDark text-slate-200">
+    <>
+      <a href="#main-content" className="skip-link">Saltar al contenido principal</a>
+      <div className="h-screen flex flex-col bg-bgDark text-slate-200" id="main-content">
       <Header rol={rol} onChangeRol={cambiarRol} />
       <NavTabs activo={tab} onChange={setTab} rol={rol} />
       <main className="flex-1 overflow-y-auto">
@@ -39,5 +41,6 @@ export default function App() {
       <BotonSOS />
       <Toast toasts={toasts} />
     </div>
+    </>
   );
 }

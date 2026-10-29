@@ -18,11 +18,11 @@ export default function PersonalPage() {
         <Stat label="Imprecisa" value={activos.filter((m) => m.estado === 'indeterminado').length} color="text-purple-400" />
       </div>
 
-      <div className="bg-panel border border-borderDark rounded-lg">
+      <div className="bg-panel border border-borderDark rounded-lg overflow-y-auto max-h-[70vh]">
         {activos.map((m) => (
           <div
             key={m.id}
-            className="flex justify-between items-center px-4 py-3 border-b border-borderDark last:border-0 text-sm"
+            className="flex flex-wrap justify-between items-center gap-3 px-4 py-3 border-b border-borderDark last:border-0 text-sm"
           >
             <div className="flex items-center gap-3">
               <span

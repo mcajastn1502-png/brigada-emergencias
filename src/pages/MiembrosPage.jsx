@@ -159,7 +159,7 @@ export default function MiembrosPage({ rol }) {
       </div>
 
       {/* Lista */}
-      <div className="bg-[#1a2027] border border-[#2d3748] rounded-lg overflow-hidden">
+      <div className="bg-[#1a2027] border border-[#2d3748] rounded-lg overflow-hidden overflow-y-auto max-h-[65vh]">
         {miembrosFiltrados.length === 0 ? (
           <div className="p-8 text-center text-slate-400 text-sm">
             No se encontraron brigadistas con esos filtros
